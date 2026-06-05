@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark" data-lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel — lucafchala</title>
+    <meta name="description" content="Painel de controle pessoal — lucafchala.com">
+    <meta name="theme-color" content="#0d0c0a">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=JetBrains+Mono:wght@300;400;500&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <script>(function(){document.documentElement.dataset.theme=localStorage.getItem('theme')||'dark'})();</script>
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:         #0d0c0a;
+            --border:     #252220;
+            --text:       #e6e1d6;
+            --muted:      #6a6358;
+            --accent:     #c08030;
+            --accent-dim: #6a4818;
+            --ctrl-bg:    #161412;
+        }
+        [data-theme="light"] {
+            --bg:         #f4efe6;
+            --border:     #d8d1c4;
+            --text:       #1c1a17;
+            --muted:      #9a8f80;
+            --accent:     #a06820;
+            --accent-dim: #c89050;
+            --ctrl-bg:    #ede8df;
+        }
+
+        html {
+            background: var(--bg); color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px; line-height: 1.75;
+            -webkit-font-smoothing: antialiased;
+            transition: background 0.25s, color 0.25s;
+        }
+        body {
+            min-height: 100vh; max-width: 680px;
+            margin: 0 auto; padding: 48px 32px 72px;
+        }
+        body::after {
+            content: ''; position: fixed; inset: 0;
+            pointer-events: none; z-index: 9999;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+            opacity: 0.28;
+        }
+
+        /* ── Controls ── */
+        .controls { display: flex; justify-content: flex-end; margin-bottom: 24px; }
+        .controls-inner {
+            display: flex; align-items: center; gap: 4px;
+            background: var(--ctrl-bg); border: 1px solid var(--border);
+            border-radius: 3px; padding: 4px 6px;
+            transition: background 0.25s, border-color 0.25s;
+        }
+        .ctrl-btn {
+            background: none; border: none; color: var(--muted);
+            font-family: 'JetBrains Mono', monospace; font-size: 10px;
+            font-weight: 400; letter-spacing: 0.09em; text-transform: uppercase;
+            padding: 4px 7px; cursor: pointer; transition: color 0.15s;
+            border-radius: 2px; line-height: 1; display: flex; align-items: center;
+        }
+        .ctrl-btn:hover { color: var(--accent); }
+        .ctrl-btn.active { color: var(--text); }
+        #btn-theme { font-size: 15px; padding: 2px 7px; }
+        .ctrl-sep { color: var(--border); font-size: 10px; user-select: none; line-height: 1; }
+
+        /* ── Header ── */
+        header { margin-bottom: 52px; animation: rise 0.9s cubic-bezier(0.16,1,0.3,1) both; }
+        .name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(48px, 10vw, 72px);
+            font-weight: 300; line-height: 0.92;
+            letter-spacing: -0.025em; margin-bottom: 18px;
+        }
+        .name em { font-style: italic; color: var(--accent); }
+        .micro { color: var(--muted); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
+
+        /* ── Rule ── */
+        .rule {
+            display: flex; align-items: center; gap: 16px;
+            margin: 36px 0; color: var(--muted); font-size: 10px; letter-spacing: 0.1em;
+        }
+        .rule::before, .rule::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        /* ── Section label ── */
+        .section-label {
+            font-size: 9.5px; letter-spacing: 0.13em; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 14px;
+            padding-bottom: 8px; border-bottom: 1px solid var(--border);
+        }
+
+        /* ── Status dot (shared) ── */
+        .dot {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: var(--muted); flex-shrink: 0;
+        }
+        .dot.on { background: var(--accent); }
+
+        /* ── Hub grid (Services) ── */
+        .hubs {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 10px; margin-bottom: 52px;
+            animation: rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.12s both;
+        }
+        .hub {
+            display: flex; flex-direction: column; gap: 5px;
+            padding: 14px 16px; border: 1px solid var(--border);
+            border-radius: 3px; background: var(--ctrl-bg);
+            text-decoration: none; position: relative;
+            transition: border-color 0.15s, background 0.15s, transform 0.12s;
+        }
+        .hub:hover { border-color: var(--accent-dim); background: var(--border); transform: translateY(-1px); }
+        .hub:active { transform: translateY(0); }
+        .hub .dot { position: absolute; top: 10px; right: 10px; }
+
+        .hub-primary {
+            grid-column: 1 / -1; border-left: 3px solid var(--accent);
+            flex-direction: row; align-items: center; gap: 20px; padding: 18px 20px;
+        }
+        .hub-primary:hover { border-left-color: var(--accent); }
+        .hub-primary .dot { position: static; margin-left: auto; }
+        .hub-primary-body { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
+
+        .hub-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 600; color: var(--text); line-height: 1; font-size: 16px;
+        }
+        .hub-primary .hub-name { font-size: 20px; }
+        .hub-desc { font-size: 10px; color: var(--muted); letter-spacing: 0.04em; }
+        .hub-url { font-size: 10px; color: var(--accent-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .hub-arrow { color: var(--accent-dim); font-size: 14px; flex-shrink: 0; transition: color 0.15s, transform 0.15s; }
+        .hub:hover .hub-arrow { color: var(--accent); transform: translate(2px, -2px); }
+
+        /* ── Repo grid ── */
+        .repos {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 8px; margin-bottom: 52px;
+            animation: rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.20s both;
+        }
+        .repo-tile {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 8px; padding: 10px 14px;
+            border: 1px solid var(--border); border-radius: 3px;
+            background: var(--ctrl-bg); position: relative;
+        }
+        .repo-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .repo-name { font-size: 11px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .repo-note { font-size: 9px; color: var(--muted); letter-spacing: 0.05em; }
+        .repo-gh {
+            color: var(--muted); font-size: 10px; text-decoration: none;
+            flex-shrink: 0; transition: color 0.15s; white-space: nowrap;
+        }
+        .repo-gh:hover { color: var(--accent); }
+        .repo-tile .dot { position: absolute; top: 8px; right: 8px; }
+
+        /* ── Useful links ── */
+        .useful-links {
+            display: flex; flex-wrap: wrap; gap: 8px;
+            margin-bottom: 52px;
+            animation: rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.28s both;
+        }
+        .useful-link {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 7px 14px; border: 1px solid var(--border);
+            border-radius: 3px; background: var(--ctrl-bg);
+            color: var(--muted); font-size: 11px; text-decoration: none;
+            transition: border-color 0.15s, color 0.15s, background 0.15s;
+        }
+        .useful-link:hover { border-color: var(--accent-dim); color: var(--text); background: var(--border); }
+        .useful-link .arr { font-size: 10px; color: var(--accent-dim); transition: color 0.15s; }
+        .useful-link:hover .arr { color: var(--accent); }
+
+        /* ── Redirects ── */
+        .redirects-section { animation: rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.36s both; }
+        .redirects-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 4px; }
+        .redirects-header .section-label { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+        #search {
+            background: var(--ctrl-bg); border: 1px solid var(--border);
+            border-radius: 3px; color: var(--text);
+            font-family: 'JetBrains Mono', monospace; font-size: 11px;
+            padding: 4px 10px; width: 130px;
+            transition: border-color 0.15s, width 0.2s; outline: none;
+        }
+        #search:focus { border-color: var(--accent-dim); width: 180px; }
+        #search::placeholder { color: var(--muted); }
+        .redirects-rule { height: 1px; background: var(--border); margin-bottom: 4px; }
+
+        .group-header {
+            font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+            color: var(--muted); padding: 16px 0 8px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .group-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .group-header:first-child { padding-top: 8px; }
+
+        .redirect-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 0; border-bottom: 1px solid var(--border);
+        }
+        .redirect-item:last-child { border-bottom: none; }
+        .redirect-slug { font-size: 12px; color: var(--accent); flex-shrink: 0; }
+        .redirect-dest {
+            font-size: 11px; color: var(--muted); flex: 1; min-width: 0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .redirect-actions { display: flex; gap: 5px; flex-shrink: 0; }
+        .act-btn {
+            background: none; border: 1px solid var(--border); border-radius: 2px;
+            color: var(--muted); font-family: 'JetBrains Mono', monospace;
+            font-size: 9px; letter-spacing: 0.07em; text-transform: uppercase;
+            padding: 3px 7px; cursor: pointer;
+            transition: color 0.15s, border-color 0.15s;
+            text-decoration: none; display: inline-flex; align-items: center; line-height: 1.2;
+        }
+        .act-btn:hover { color: var(--text); border-color: var(--accent-dim); }
+        .act-btn.ok { color: var(--accent); border-color: var(--accent-dim); }
+        .empty { padding: 20px 0; color: var(--muted); font-size: 11px; text-align: center; }
+
+        /* ── Animation ── */
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 540px) {
+            body { padding: 32px 22px 52px; }
+            .hubs { grid-template-columns: 1fr 1fr; }
+            .repos { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 380px) {
+            .hubs { grid-template-columns: 1fr; }
+            .redirect-dest { display: none; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="controls">
+        <div class="controls-inner">
+            <button class="ctrl-btn active" id="btn-pt" onclick="setLang('pt')">PT</button>
+            <span class="ctrl-sep">|</span>
+            <button class="ctrl-btn" id="btn-en" onclick="setLang('en')">EN</button>
+            <span class="ctrl-sep">·</span>
+            <button class="ctrl-btn" id="btn-theme" onclick="toggleTheme()" title="Toggle theme" aria-label="Alternar tema">◐</button>
+        </div>
+    </div>
+
+    <header>
+        <h1 class="name" id="h1-title">Painel <em>de</em><br>Controle</h1>
+        <p class="micro">lucafchala.com</p>
+    </header>
+
+    <div class="rule" id="rule-text">SERVIÇOS</div>
+
+    <section aria-labelledby="lbl-services">
+        <p class="section-label" id="lbl-services">Serviços</p>
+        <div class="hubs" id="hubs-grid"></div>
+    </section>
+
+    <section aria-labelledby="lbl-repos">
+        <p class="section-label" id="lbl-repos">Repositórios</p>
+        <div class="repos" id="repos-grid"></div>
+    </section>
+
+    <section aria-labelledby="lbl-links">
+        <p class="section-label" id="lbl-links">Links Úteis</p>
+        <div class="useful-links">
+            <a href="https://dash.cloudflare.com" class="useful-link" target="_blank" rel="noopener noreferrer">
+                Cloudflare Dashboard <span class="arr">↗</span>
+            </a>
+            <a href="https://dash.cloudflare.com/pages" class="useful-link" target="_blank" rel="noopener noreferrer">
+                Cloudflare Pages <span class="arr">↗</span>
+            </a>
+            <a href="https://dash.cloudflare.com/dns" class="useful-link" target="_blank" rel="noopener noreferrer">
+                DNS <span class="arr">↗</span>
+            </a>
+            <a href="https://dash.cloudflare.com/analytics" class="useful-link" target="_blank" rel="noopener noreferrer">
+                Analytics <span class="arr">↗</span>
+            </a>
+            <a href="https://github.com/lucafchala" class="useful-link" target="_blank" rel="noopener noreferrer">
+                GitHub <span class="arr">↗</span>
+            </a>
+            <a href="https://github.com/lucafchala?tab=repositories" class="useful-link" target="_blank" rel="noopener noreferrer">
+                Repositórios <span class="arr">↗</span>
+            </a>
+        </div>
+    </section>
+
+    <section class="redirects-section" aria-labelledby="lbl-redirects">
+        <div class="redirects-header">
+            <p class="section-label" id="lbl-redirects">Redirecionamentos</p>
+            <input type="search" id="search" placeholder="filtrar…" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="redirects-rule"></div>
+        <div id="redirects-list"></div>
+    </section>
+
+    <script>
+        /* ── Strings ── */
+        const STRINGS = {
+            pt: {
+                h1: 'Painel <em>de</em><br>Controle',
+                rule: 'SERVIÇOS',
+                lbl_services: 'Serviços',
+                lbl_repos: 'Repositórios',
+                lbl_links: 'Links Úteis',
+                lbl_redirects: 'Redirecionamentos',
+                copy: 'copiar', copied: 'copiado!', open: 'abrir',
+                no_results: 'Nenhum resultado.',
+                groups: { contact: 'contato', events: 'eventos', video: 'vídeo', tools: 'ferramentas' },
+                hub_fotos:   ['Fotos',          'Dashboard de fotos'],
+                hub_home:    ['lucafchala.com', 'Página principal'],
+                hub_now:     ['Now',            'Página /now'],
+                hub_paste:   ['Paste',          'Pastes / snippets'],
+                hub_weblog:  ['Weblog',         'Blog pessoal'],
+                hub_url:     ['PURLs',          'Links curtos'],
+                hub_admin:   ['Admin',          'Painel admin'],
+                repo_hub: 'migration hub',
+            },
+            en: {
+                h1: 'Control <em>Panel</em>',
+                rule: 'SERVICES',
+                lbl_services: 'Services',
+                lbl_repos: 'Repositories',
+                lbl_links: 'Useful Links',
+                lbl_redirects: 'Redirects',
+                copy: 'copy', copied: 'copied!', open: 'open',
+                no_results: 'No results.',
+                groups: { contact: 'contact', events: 'events', video: 'video', tools: 'tools' },
+                hub_fotos:   ['Fotos',          'Photo dashboard'],
+                hub_home:    ['lucafchala.com', 'Main homepage'],
+                hub_now:     ['Now',            '/now page'],
+                hub_paste:   ['Paste',          'Pastes / snippets'],
+                hub_weblog:  ['Weblog',         'Personal blog'],
+                hub_url:     ['PURLs',          'Short links'],
+                hub_admin:   ['Admin',          'Admin panel'],
+                repo_hub: 'migration hub',
+            }
+        };
+
+        let lang = localStorage.getItem('lang') || 'pt';
+        const s = () => STRINGS[lang];
+
+        /* ── Hubs ── */
+        const HUBS = [
+            { key: 'fotos',  url: 'https://fotos.lucafchala.com/dashboard', active: true,  primary: true  },
+            { key: 'home',   url: 'https://lucafchala.com',                 active: true,  primary: false },
+            { key: 'now',    url: 'https://now.lucafchala.com',             active: false, primary: false },
+            { key: 'paste',  url: 'https://paste.lucafchala.com',           active: false, primary: false },
+            { key: 'weblog', url: 'https://weblog.lucafchala.com',          active: false, primary: false },
+            { key: 'url',    url: 'https://lucafchala.com',                 active: true,  primary: false },
+            { key: 'admin',  url: 'https://omg.lucafchala.com',             active: false, primary: false },
+        ];
+
+        function renderHubs() {
+            document.getElementById('hubs-grid').innerHTML = HUBS.map(h => {
+                const [name, desc] = s()[`hub_${h.key}`];
+                const displayUrl = h.url.replace('https://', '');
+                const cls = ['hub', h.primary && 'hub-primary', h.active && 'active'].filter(Boolean).join(' ');
+                const dot = `<span class="dot${h.active ? ' on' : ''}" title="${h.active ? 'active' : 'pending'}"></span>`;
+                if (h.primary) {
+                    return `<a href="${h.url}" class="${cls}" target="_blank" rel="noopener noreferrer">
+                        <div class="hub-primary-body">
+                            <span class="hub-name">${name}</span>
+                            <span class="hub-desc">${desc}</span>
+                            <span class="hub-url">${displayUrl}</span>
+                        </div>
+                        <span class="hub-arrow">↗</span>${dot}
+                    </a>`;
+                }
+                return `<a href="${h.url}" class="${cls}" target="_blank" rel="noopener noreferrer">
+                    <span class="hub-name">${name}</span>
+                    <span class="hub-desc">${desc}</span>
+                    <span class="hub-url">${displayUrl}</span>
+                    ${dot}
+                </a>`;
+            }).join('');
+        }
+
+        /* ── Repos ── */
+        const REPOS = [
+            { name: 'lucafchala.com',        repo: 'lucafchala/lucafchala.com',        active: true  },
+            { name: 'dash.lucafchala.com',   repo: 'lucafchala/dash.lucafchala.com',   active: false },
+            { name: 'url.lucafchala.com',    repo: 'lucafchala/url.lucafchala.com',    active: false },
+            { name: 'now.lucafchala.com',    repo: 'lucafchala/now.lucafchala.com',    active: false },
+            { name: 'paste.lucafchala.com',  repo: 'lucafchala/paste.lucafchala.com',  active: false },
+            { name: 'weblog.lucafchala.com', repo: 'lucafchala/weblog.lucafchala.com', active: false },
+            { name: 'OMG.LOL_transfer',      repo: 'lucafchala/OMG.LOL_transfer',      active: true, note: true },
+        ];
+
+        function renderRepos() {
+            document.getElementById('repos-grid').innerHTML = REPOS.map(r => `
+                <div class="repo-tile">
+                    <div class="repo-body">
+                        <span class="repo-name">${r.name}</span>
+                        ${r.note ? `<span class="repo-note">${s().repo_hub}</span>` : ''}
+                    </div>
+                    <a href="https://github.com/${r.repo}" class="repo-gh" target="_blank" rel="noopener noreferrer">→ GitHub</a>
+                    <span class="dot${r.active ? ' on' : ''}" title="${r.active ? 'active' : 'planned'}"></span>
+                </div>`).join('');
+        }
+
+        /* ── Redirects ── */
+        let allRedirects = [];
+
+        function esc(str) {
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function shortHost(url) {
+            try {
+                const u = new URL(url);
+                const host = u.hostname.replace(/^www\./, '');
+                const path = u.pathname !== '/' ? u.pathname.slice(0, 16) + (u.pathname.length > 17 ? '…' : '') : '';
+                return host + path;
+            } catch { return url.slice(0, 28) + '…'; }
+        }
+
+        function renderRedirects(filter) {
+            const list = document.getElementById('redirects-list');
+            const q = (filter || '').toLowerCase().trim();
+            const items = q
+                ? allRedirects.filter(r => r.slug.toLowerCase().includes(q) || r.destination.toLowerCase().includes(q))
+                : allRedirects;
+
+            if (!items.length) {
+                list.innerHTML = `<p class="empty">${esc(s().no_results)}</p>`;
+                return;
+            }
+
+            const grouped = {};
+            items.forEach(r => { const g = r.group||'tools'; (grouped[g]=grouped[g]||[]).push(r); });
+
+            const ORDER = ['contact','events','video','tools'];
+            const keys = [...ORDER.filter(k=>grouped[k]), ...Object.keys(grouped).filter(k=>!ORDER.includes(k))];
+
+            list.innerHTML = keys.map(g => {
+                const label = s().groups[g] || g;
+                const rows = grouped[g].map(r => `
+                    <div class="redirect-item">
+                        <span class="redirect-slug">/${esc(r.slug)}</span>
+                        <span class="redirect-dest" title="${esc(r.destination)}">${esc(shortHost(r.destination))}</span>
+                        <div class="redirect-actions">
+                            <button class="act-btn" data-slug="${esc(r.slug)}" onclick="doCopy(this)">${esc(s().copy)}</button>
+                            <a class="act-btn" href="${esc(r.destination)}" target="_blank" rel="noopener noreferrer">${esc(s().open)}</a>
+                        </div>
+                    </div>`).join('');
+                return `<div class="group-header">${esc(label)}</div>${rows}`;
+            }).join('');
+        }
+
+        /* PURLs live at lucafchala.com/slug */
+        function doCopy(btn) {
+            const url = `https://lucafchala.com/${btn.dataset.slug}`;
+            const reset = () => { btn.textContent = s().copy; btn.classList.remove('ok'); };
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {
+                    btn.textContent = s().copied; btn.classList.add('ok');
+                    setTimeout(reset, 2000);
+                }).catch(reset);
+            } else {
+                const ta = Object.assign(document.createElement('textarea'), { value: url, style: 'position:fixed;opacity:0' });
+                document.body.appendChild(ta); ta.select();
+                try { document.execCommand('copy'); } catch(_) {}
+                document.body.removeChild(ta);
+                btn.textContent = s().copied; btn.classList.add('ok');
+                setTimeout(reset, 2000);
+            }
+        }
+
+        document.getElementById('search').addEventListener('input', e => renderRedirects(e.target.value));
+
+        /* ── Lang / Theme ── */
+        function applyLang(l) {
+            lang = l;
+            document.documentElement.lang = l === 'pt' ? 'pt-BR' : 'en';
+            document.documentElement.dataset.lang = l;
+            localStorage.setItem('lang', l);
+            document.getElementById('h1-title').innerHTML = s().h1;
+            document.getElementById('rule-text').textContent = s().rule;
+            document.getElementById('lbl-services').textContent = s().lbl_services;
+            document.getElementById('lbl-repos').textContent = s().lbl_repos;
+            document.getElementById('lbl-links').textContent = s().lbl_links;
+            document.getElementById('lbl-redirects').textContent = s().lbl_redirects;
+            document.getElementById('btn-pt').classList.toggle('active', l === 'pt');
+            document.getElementById('btn-en').classList.toggle('active', l === 'en');
+            renderHubs(); renderRepos();
+            renderRedirects(document.getElementById('search').value);
+        }
+        function setLang(l) { applyLang(l); }
+        function toggleTheme() {
+            const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+            document.documentElement.dataset.theme = next;
+            localStorage.setItem('theme', next);
+        }
+
+        /* ── Bootstrap ── */
+        fetch('data.json')
+            .then(r => r.json())
+            .then(d => { allRedirects = d.redirects || []; renderRedirects(); })
+            .catch(() => {
+                document.getElementById('redirects-list').innerHTML =
+                    '<p class="empty" style="color:var(--muted)">Erro ao carregar dados.</p>';
+            });
+        applyLang(lang);
+
+        /* ── PWA ── */
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+        }
+    </script>
+
+</body>
+</html>

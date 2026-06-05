@@ -1,0 +1,19 @@
+{
+  "name": "Painel — lucafchala",
+  "short_name": "Painel",
+  "description": "Painel de controle pessoal — lucafchala.com",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0c0a",
+  "theme_color": "#0d0c0a",
+  "orientation": "portrait-primary",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
