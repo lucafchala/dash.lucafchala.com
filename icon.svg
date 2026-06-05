@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#0d0c0a"/>
+  <rect x="0" y="0" width="12" height="512" rx="6" fill="#c08030"/>
+  <text
+    x="276" y="376"
+    font-family="Georgia, Palatino, 'Book Antiqua', serif"
+    font-style="italic"
+    font-size="298"
+    font-weight="300"
+    fill="#c08030"
+    text-anchor="middle">P</text>
+</svg>
