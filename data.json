@@ -1,0 +1,44 @@
+{
+  "redirects": [
+    { "slug": "instagram",    "destination": "https://www.instagram.com/lucafchala",               "group": "contact" },
+    { "slug": "signal",       "destination": "https://signal.me/#eu/4vqshkFFVw36CvpTsD_-AugJ9d-XCDvpmH03l1Tj5HJ8nxGZW2tDQKMGJsUCQc4g", "group": "contact" },
+    { "slug": "buymeacoffee", "destination": "https://livepix.gg/tucas",                           "group": "contact" },
+    { "slug": "simplex",      "destination": "https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2F6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE%3D%40smp10.simplex.im%2FNWvHcv_uYgb3tlyxpk9q8c93Lh8L6QBP%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAZoG7NjetcQBmYnxxdUB_KxRw1ZNUAgaLa-HPEvl41Dk%253D%26q%3Dc%26srv%3Drb2pbttocvnbrngnwziclp2f4ckjq65kebafws6g4hy22cdaiv5dwjqd.onion", "group": "contact" },
+
+    { "slug": "piauifut2024",       "destination": "https://drive.google.com/drive/folders/1OFR7xmT1LkRu5UDy6cX_fr9iP7qmodAP?usp=drive_link", "group": "events" },
+    { "slug": "piauifut2025",       "destination": "https://drive.google.com/drive/folders/1-ElIAZT2Wnyv23HFSqZUWK6cKqwqwjN2",                "group": "events" },
+    { "slug": "piauifest2025",      "destination": "https://drive.google.com/drive/folders/1CDTfc56wY2ErnTi4DqFbloJ1kR18kxGA",                "group": "events" },
+    { "slug": "mostra2025",         "destination": "https://drive.google.com/drive/folders/1FEpVkyz4kTEKUOPanjPcgkHUWWj9rwfu",                "group": "events" },
+    { "slug": "isa_16anos",         "destination": "https://drive.google.com/drive/folders/12le75s8WISbtBsk0nMJVriqi-H74efmz",                 "group": "events" },
+    { "slug": "salto_dias-dos-pais","destination": "https://drive.google.com/drive/folders/1_eyarONWOWVJ4sygXPUysF3sU-WftTM1",                "group": "events" },
+    { "slug": "ibiúna_2025",        "destination": "https://paste.lucafchala.com/cloudspot_deprecation",                                       "group": "events" },
+    { "slug": "paraty",             "destination": "https://paste.lucafchala.com/cloudspot_deprecation",                                       "group": "events" },
+    { "slug": "natal-2024",         "destination": "https://paste.lucafchala.com/cloudspot_deprecation",                                       "group": "events" },
+    { "slug": "viagem-familia_2024","destination": "https://paste.lucafchala.com/cloudspot_deprecation",                                       "group": "events" },
+    { "slug": "ferriani_2024",      "destination": "https://paste.lucafchala.com/cloudspot_deprecation",                                       "group": "events" },
+    { "slug": "dia-dos-pais_2024",  "destination": "https://paste.lucafchala.com/cloudspot_deprecation",                                       "group": "events" },
+    { "slug": "churras",            "destination": "https://paste.lucafchala.com/cloudspot_deprecation",                                       "group": "events" },
+    { "slug": "ecp_carros",         "destination": "https://paste.lucafchala.com/cloudspot_deprecation",                                       "group": "events" },
+    { "slug": "ecp_125_anos",       "destination": "https://paste.lucafchala.com/cloudspot_deprecation",                                       "group": "events" },
+
+    { "slug": "a-mascara_download",     "destination": "https://drive.google.com/file/d/15GRrKFxkP62dPClsbprQZsa0jZDOQRrj/view?usp=sharing",  "group": "video" },
+    { "slug": "a-mascara_download-csa", "destination": "https://drive.google.com/file/d/1rxtR_n3xvA6pB3xOBI5HQ9zJ8XDMdplG/view?usp=sharing",  "group": "video" },
+    { "slug": "a-mascara_yt",           "destination": "https://youtu.be/QBcq8sRf81c",                                                         "group": "video" },
+    { "slug": "a-mascara",              "destination": "https://paste.lucafchala.com/a-mascara",                                                "group": "video" },
+    { "slug": "nirvana-e-a-cultura-do-ultrarromantismo_download",     "destination": "https://drive.google.com/file/d/1OxQTB0In3aBOwrcMy6GfBekYgL4xNIA2/view?usp=sharing", "group": "video" },
+    { "slug": "nirvana-e-a-cultura-do-ultrarromantismo_download-csa", "destination": "https://drive.google.com/file/d/1OYAvjwwj_l9FL6533pujLb1IXT9S2EfG/view?usp=sharing", "group": "video" },
+    { "slug": "nirvana-e-a-cultura-do-ultrarromantismo_yt",           "destination": "https://youtu.be/g5IHyrC36mA",                            "group": "video" },
+    { "slug": "nirvana-e-a-cultura-do-ultrarromantismo",              "destination": "https://paste.lucafchala.com/nirvana-e-a-cultura-do-ultrarromantismo", "group": "video" },
+    { "slug": "vela_f5-download",     "destination": "https://drive.google.com/file/d/1D9cQ1996ZJjdqT9nln0YBNcXaw7BeTM0/view?usp=sharing",    "group": "video" },
+    { "slug": "vela_f5-download_csa", "destination": "https://drive.google.com/file/d/1oe70ZmxADDGeSHpcuGJ4jpOSBSZiwaM3/view?usp=sharing",    "group": "video" },
+    { "slug": "vela_f5-youtube",      "destination": "https://www.youtube.com/watch?v=4UwA21rnP-8",                                            "group": "video" },
+    { "slug": "vela_f5-entrega",      "destination": "https://paste.lucafchala.com/vela_f5-2024",                                              "group": "video" },
+    { "slug": "para-alem-de-sonhar",  "destination": "https://youtu.be/3j1NFW43o0o",                                                           "group": "video" },
+
+    { "slug": "review",              "destination": "https://forms.gle/AoMuMFPj9TFuzS3H8",        "group": "tools" },
+    { "slug": "cloudspot_dashboard", "destination": "https://app.cloudspot.io/dashboard/events",   "group": "tools" },
+    { "slug": "pgp",                 "destination": "https://paste.lucafchala.com/pgp",            "group": "tools" },
+    { "slug": "portfolio",           "destination": "https://paste.lucafchala.com/cloudspot_deprecation", "group": "tools" },
+    { "slug": "teste-api",           "destination": "https://lucafchala.com",                      "group": "tools" }
+  ]
+}
