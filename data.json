@@ -181,8 +181,8 @@
       "group": "tools"
     },
     {
-      "slug": "teste123",
-      "destination": "https://thisisatest.com",
+      "slug": "teste",
+      "destination": "https://test.com",
       "group": "tools"
     }
   ]
