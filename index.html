@@ -669,6 +669,18 @@ body{min-height:100vh;max-width:720px;margin:0 auto;padding:48px 32px 72px}
 #btn-theme{font-size:15px;padding:2px 7px}
 header{margin-bottom:52px;animation:rise .9s cubic-bezier(.16,1,.3,1) both}
 .name{font-family:'Cormorant Garamond',serif;font-size:clamp(48px,10vw,72px);font-weight:300;line-height:.92;letter-spacing:-.025em;margin-bottom:18px}
+.micro{color:var(--muted);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.rule{display:flex;align-items:center;gap:16px;margin:36px 0;color:var(--muted);font-size:10px;letter-spacing:.1em}
+.rule::before,.rule::after{content:'';flex:1;height:1px;background:var(--border)}
+/* hubs */
+.hubs-section{margin-bottom:8px;animation:rise .9s cubic-bezier(.16,1,.3,1) .05s both}
+.hubs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.hub{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:1px solid var(--border);border-radius:3px;background:var(--ctrl-bg);text-decoration:none;transition:border-color .15s,background .15s}
+.hub:hover{border-color:var(--accent-dim);background:var(--bg)}
+.hub-name{font-size:11px;color:var(--text);letter-spacing:.04em}
+.hub-sub{font-size:10px;color:var(--muted)}
+/* redirects */
+.redirects-section{animation:rise .9s cubic-bezier(.16,1,.3,1) .12s both}
 .tagline{color:var(--muted);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
 .micro{color:var(--muted);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
 .rule{display:flex;align-items:center;gap:16px;margin:36px 0;color:var(--muted);font-size:10px;letter-spacing:.1em}
@@ -694,6 +706,8 @@ header{margin-bottom:52px;animation:rise .9s cubic-bezier(.16,1,.3,1) both}
 .act-btn.ok{color:var(--accent);border-color:var(--accent-dim)}
 .empty{padding:20px 0;color:var(--muted);font-size:11px;text-align:center}
 @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:540px){body{padding:32px 22px 52px}.hubs-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:380px){.redirect-dest{display:none}.hubs-grid{grid-template-columns:1fr}}
 @media(max-width:540px){body{padding:32px 22px 52px}}
 @media(max-width:380px){.redirect-dest{display:none}}
 </style>
@@ -704,6 +718,17 @@ header{margin-bottom:52px;animation:rise .9s cubic-bezier(.16,1,.3,1) both}
   <h1 class="name">url.<em style="font-style:normal;color:var(--muted);font-weight:300">lucafchala</em>.com</h1>
   <p class="micro">redirecionamentos permanentes</p>
 </header>
+<div class="hubs-section">
+  <div class="rule">PÁGINAS</div>
+  <div class="hubs-grid">
+    <a class="hub" href="https://lucafchala.com" target="_blank" rel="noopener"><span class="hub-name">lucafchala.com</span><span class="hub-sub">página principal</span></a>
+    <a class="hub" href="https://fotos.lucafchala.com" target="_blank" rel="noopener"><span class="hub-name">fotos</span><span class="hub-sub">fotos.lucafchala.com</span></a>
+    <a class="hub" href="https://radio.lucafchala.com" target="_blank" rel="noopener"><span class="hub-name">rádio</span><span class="hub-sub">radio.lucafchala.com</span></a>
+    <a class="hub" href="https://paste.lucafchala.com" target="_blank" rel="noopener"><span class="hub-name">paste</span><span class="hub-sub">pastes &amp; snippets</span></a>
+    <a class="hub" href="https://weblog.lucafchala.com" target="_blank" rel="noopener"><span class="hub-name">weblog</span><span class="hub-sub">weblog.lucafchala.com</span></a>
+    <a class="hub" href="https://now.lucafchala.com" target="_blank" rel="noopener"><span class="hub-name">now</span><span class="hub-sub">now.lucafchala.com</span></a>
+  </div>
+</div>
 <div class="rule">PURLS</div>
 <div class="redirects-section"><div id="redirects-list"><p class="empty" style="color:var(--muted)">carregando…</p></div></div>
 <script>
