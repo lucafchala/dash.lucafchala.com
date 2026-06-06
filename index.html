@@ -838,7 +838,7 @@ function toggleTheme(){const t=document.documentElement.dataset.theme==='dark'?'
                     getFile(repoUrl, 'index.html').catch(() => null),
                     getFile(repoUrl, '404.html').catch(() => null),
                 ]);
-                if (uf) await putFile(repoUrl, '_redirects', redirectsContent, uf.sha, 'sync redirects via dash.lucafchala.com');
+                await putFile(repoUrl, '_redirects', redirectsContent, uf ? uf.sha : undefined, 'sync redirects via dash.lucafchala.com');
                 await putFile(repoUrl, 'data.json', dataJson, udf ? udf.sha : undefined, 'sync data.json via dash.lucafchala.com');
                 await putFile(repoUrl, 'index.html', genUrlIndex(), uif ? uif.sha : undefined, 'update index via dash.lucafchala.com');
                 await putFile(repoUrl, '404.html', gen404Html(), u4f ? u4f.sha : undefined, 'update 404 page via dash.lucafchala.com');
