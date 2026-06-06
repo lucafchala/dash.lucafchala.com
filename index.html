@@ -364,7 +364,7 @@
             hub_paste:   ['Paste',          'Pastes / snippets'],
             hub_weblog:  ['Weblog',         'Blog pessoal'],
             hub_radio:   ['Rádio',          'radio.lucafchala.com'],
-            hub_admin:   ['Admin',          'Painel admin'],
+            hub_url:     ['URL',            'Redirecionamentos'],
             repo_hub: 'migration hub',
             auth_notice_purl: 'Configure o GitHub para editar redirecionamentos.',
             auth_notice_paste: 'Configure o GitHub para gerenciar pastes.',
@@ -387,7 +387,7 @@
             hub_paste:   ['Paste',          'Pastes / snippets'],
             hub_weblog:  ['Weblog',         'Personal blog'],
             hub_radio:   ['Radio',          'radio.lucafchala.com'],
-            hub_admin:   ['Admin',          'Admin panel'],
+            hub_url:     ['URL',            'Permanent redirects'],
             repo_hub: 'migration hub',
             auth_notice_purl: 'Configure GitHub to edit redirects.',
             auth_notice_paste: 'Configure GitHub to manage pastes.',
@@ -404,17 +404,18 @@
         { key: 'fotos',  url: 'https://fotos.lucafchala.com/dashboard', active: true,  primary: true  },
         { key: 'home',   url: 'https://lucafchala.com',                 active: true,  primary: false },
         { key: 'now',    url: 'https://now.lucafchala.com',             active: false, primary: false },
-        { key: 'paste',  url: 'https://paste.lucafchala.com',           active: false, primary: false },
+        { key: 'paste',  url: 'https://paste.lucafchala.com',           active: true,  primary: false },
         { key: 'weblog', url: 'https://weblog.lucafchala.com',          active: false, primary: false },
-        { key: 'radio',  url: 'https://radio.lucafchala.com',           active: false, primary: false },
-        { key: 'admin',  url: 'https://omg.lucafchala.com',             active: false, primary: false },
+        { key: 'radio',  url: 'https://radio.lucafchala.com',           active: true,  primary: false },
+        { key: 'url',    url: 'https://url.lucafchala.com',             active: true,  primary: false },
     ];
     const REPOS = [
         { name: 'lucafchala.com',        repo: 'lucafchala/lucafchala.com',        active: true  },
-        { name: 'dash.lucafchala.com',   repo: 'lucafchala/dash.lucafchala.com',   active: false },
-        { name: 'radio.lucafchala.com',  repo: 'lucafchala/radio.lucafchala.com',  active: false },
+        { name: 'dash.lucafchala.com',   repo: 'lucafchala/dash.lucafchala.com',   active: true  },
+        { name: 'radio.lucafchala.com',  repo: 'lucafchala/radio.lucafchala.com',  active: true  },
         { name: 'now.lucafchala.com',    repo: 'lucafchala/now.lucafchala.com',    active: false },
-        { name: 'paste.lucafchala.com',  repo: 'lucafchala/paste.lucafchala.com',  active: false },
+        { name: 'paste.lucafchala.com',  repo: 'lucafchala/paste.lucafchala.com',  active: true  },
+        { name: 'url.lucafchala.com',    repo: 'lucafchala/url.lucafchala.com',    active: true  },
         { name: 'weblog.lucafchala.com', repo: 'lucafchala/weblog.lucafchala.com', active: false },
         { name: 'OMG.LOL_transfer',      repo: 'lucafchala/OMG.LOL_transfer',      active: true, note: true },
     ];
@@ -680,6 +681,12 @@ header{margin-bottom:52px;animation:rise .9s cubic-bezier(.16,1,.3,1) both}
 .hub-sub{font-size:10px;color:var(--muted)}
 /* redirects */
 .redirects-section{animation:rise .9s cubic-bezier(.16,1,.3,1) .12s both}
+.tagline{color:var(--muted);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.micro{color:var(--muted);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.rule{display:flex;align-items:center;gap:16px;margin:36px 0;color:var(--muted);font-size:10px;letter-spacing:.1em}
+.rule::before,.rule::after{content:'';flex:1;height:1px;background:var(--border)}
+.section-label{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.redirects-section{animation:rise .9s cubic-bezier(.16,1,.3,1) .1s both}
 .group-header{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:16px 0 8px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
 .group-header::after{content:'';flex:1;height:1px;background:var(--border)}
 .group-header:first-child{padding-top:8px}
@@ -701,6 +708,8 @@ header{margin-bottom:52px;animation:rise .9s cubic-bezier(.16,1,.3,1) both}
 @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:540px){body{padding:32px 22px 52px}.hubs-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:380px){.redirect-dest{display:none}.hubs-grid{grid-template-columns:1fr}}
+@media(max-width:540px){body{padding:32px 22px 52px}}
+@media(max-width:380px){.redirect-dest{display:none}}
 </style>
 </head>
 <body>
