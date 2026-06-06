@@ -59,6 +59,9 @@
         /* ── Dot ── */
         .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
         .dot.on { background: var(--accent); }
+        .dot.up { background: #5a9e6f; }
+        .dot.down { background: #c0483a; }
+        .dot.degraded { background: #b07830; }
 
         /* ── Hubs ── */
         .hubs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 52px; animation: rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.12s both; }
@@ -365,6 +368,7 @@
             hub_weblog:  ['Weblog',         'Blog pessoal'],
             hub_radio:   ['Rádio',          'radio.lucafchala.com'],
             hub_url:     ['URL',            'Redirecionamentos'],
+            hub_status:  ['Status',         'Status dos serviços'],
             repo_hub: 'migration hub',
             auth_notice_purl: 'Configure o GitHub para editar redirecionamentos.',
             auth_notice_paste: 'Configure o GitHub para gerenciar pastes.',
@@ -388,6 +392,7 @@
             hub_weblog:  ['Weblog',         'Personal blog'],
             hub_radio:   ['Radio',          'radio.lucafchala.com'],
             hub_url:     ['URL',            'Permanent redirects'],
+            hub_status:  ['Status',         'Service status page'],
             repo_hub: 'migration hub',
             auth_notice_purl: 'Configure GitHub to edit redirects.',
             auth_notice_paste: 'Configure GitHub to manage pastes.',
@@ -408,6 +413,7 @@
         { key: 'weblog', url: 'https://weblog.lucafchala.com',          active: false, primary: false },
         { key: 'radio',  url: 'https://radio.lucafchala.com',           active: true,  primary: false },
         { key: 'url',    url: 'https://url.lucafchala.com',             active: true,  primary: false },
+        { key: 'status', url: 'https://status.lucafchala.com',          active: true,  primary: false },
     ];
     const REPOS = [
         { name: 'lucafchala.com',        repo: 'lucafchala/lucafchala.com',        active: true  },
@@ -419,6 +425,18 @@
         { name: 'weblog.lucafchala.com', repo: 'lucafchala/weblog.lucafchala.com', active: false },
         { name: 'OMG.LOL_transfer',      repo: 'lucafchala/OMG.LOL_transfer',      active: true, note: true },
     ];
+
+    /* ── Status ── */
+    let statusMap = {}; // normalized url -> 'up' | 'down' | 'degraded'
+    function normalizeUrl(u) { return u.replace(/\/$/, '').toLowerCase(); }
+    function dotClass(h) {
+        if (!h.active) return 'dot';
+        const st = statusMap[normalizeUrl(h.url)];
+        if (st === 'up') return 'dot up';
+        if (st === 'down') return 'dot down';
+        if (st === 'degraded') return 'dot degraded';
+        return 'dot on';
+    }
 
     /* ── GitHub API ── */
     const GH_DEFAULTS = { repoHome: 'lucafchala/lucafchala.com', repoDash: 'lucafchala/dash.lucafchala.com', repoPaste: 'lucafchala/paste.lucafchala.com', repoUrl: 'lucafchala/url.lucafchala.com' };
@@ -1083,7 +1101,7 @@ function toggleTheme(){const next=document.documentElement.dataset.theme==='dark
             const [name, desc] = s()[`hub_${h.key}`];
             const displayUrl = h.url.replace('https://', '');
             const cls = ['hub', h.primary && 'hub-primary'].filter(Boolean).join(' ');
-            const dot = `<span class="dot${h.active ? ' on' : ''}"></span>`;
+            const dot = `<span class="${dotClass(h)}"></span>`;
             if (h.primary) {
                 return `<a href="${h.url}" class="${cls}" target="_blank" rel="noopener noreferrer">
                     <div class="hub-primary-body">
@@ -1169,6 +1187,16 @@ function toggleTheme(){const next=document.documentElement.dataset.theme==='dark
             const loading = el('pastes-loading');
             if (loading) loading.textContent = s().pastes_offline;
         });
+
+    /* Fetch Upptime summary to color hub dots by real uptime status */
+    fetch('https://raw.githubusercontent.com/lucafchala/upptime/HEAD/history/summary.json')
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(data => {
+            statusMap = {};
+            data.forEach(m => { if (m.url && m.status) statusMap[normalizeUrl(m.url)] = m.status; });
+            renderHubs();
+        })
+        .catch(() => {});
 
     applyLang(lang);
     updateGhBtn();
