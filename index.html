@@ -669,6 +669,7 @@ body{min-height:100vh;max-width:720px;margin:0 auto;padding:48px 32px 72px}
 #btn-theme{font-size:15px;padding:2px 7px}
 header{margin-bottom:52px;animation:rise .9s cubic-bezier(.16,1,.3,1) both}
 .name{font-family:'Cormorant Garamond',serif;font-size:clamp(48px,10vw,72px);font-weight:300;line-height:.92;letter-spacing:-.025em;margin-bottom:18px}
+.name em{color:var(--accent)}
 .micro{color:var(--muted);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
 .rule{display:flex;align-items:center;gap:16px;margin:36px 0;color:var(--muted);font-size:10px;letter-spacing:.1em}
 .rule::before,.rule::after{content:'';flex:1;height:1px;background:var(--border)}
@@ -715,7 +716,7 @@ header{margin-bottom:52px;animation:rise .9s cubic-bezier(.16,1,.3,1) both}
 <body>
 <div class="controls"><div class="controls-inner"><button class="ctrl-btn" id="btn-theme" onclick="toggleTheme()">◐</button></div></div>
 <header>
-  <h1 class="name">url.<em style="font-style:normal;color:var(--muted);font-weight:300">lucafchala</em>.com</h1>
+  <h1 class="name">url.<em style="font-style:normal">lucafchala</em>.com</h1>
   <p class="micro">redirecionamentos permanentes</p>
 </header>
 <div class="hubs-section">
