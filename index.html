@@ -727,18 +727,18 @@ fetch('/data.json').then(r=>r.json()).then(({redirects=[]})=>{
                 putFile(repoHome, '_redirects', redirectsContent, hf.sha, 'update redirects via dash.lucafchala.com'),
                 putFile(repoDash, 'data.json', dataJson, df.sha, 'update data.json via dash.lucafchala.com'),
             ];
-            /* also sync url.lucafchala.com if configured and reachable */
+            await Promise.all(writes);
+            /* also sync url.lucafchala.com sequentially — parallel commits to the same branch cause SHA conflicts */
             if (repoUrl) {
                 const [uf, udf, uif] = await Promise.all([
                     getFile(repoUrl, '_redirects').catch(() => null),
                     getFile(repoUrl, 'data.json').catch(() => null),
                     getFile(repoUrl, 'index.html').catch(() => null),
                 ]);
-                if (uf) writes.push(putFile(repoUrl, '_redirects', redirectsContent, uf.sha, 'sync redirects via dash.lucafchala.com'));
-                writes.push(putFile(repoUrl, 'data.json', dataJson, udf ? udf.sha : undefined, 'sync data.json via dash.lucafchala.com'));
-                writes.push(putFile(repoUrl, 'index.html', genUrlIndex(), uif ? uif.sha : undefined, 'update index via dash.lucafchala.com'));
+                if (uf) await putFile(repoUrl, '_redirects', redirectsContent, uf.sha, 'sync redirects via dash.lucafchala.com');
+                await putFile(repoUrl, 'data.json', dataJson, udf ? udf.sha : undefined, 'sync data.json via dash.lucafchala.com');
+                await putFile(repoUrl, 'index.html', genUrlIndex(), uif ? uif.sha : undefined, 'update index via dash.lucafchala.com');
             }
-            await Promise.all(writes);
             savedRedirects = JSON.parse(JSON.stringify(redirects));
             btn.textContent = '✓'; btn.classList.add('ok');
             setTimeout(() => { btn.textContent = 'salvar'; btn.disabled = false; btn.classList.remove('ok'); updatePurlSaveBar(); }, 2500);
