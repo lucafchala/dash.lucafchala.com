@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Em transferência — lucafchala.com</title><meta name="theme-color" content="#0d0c0a">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script>(function(){document.documentElement.dataset.theme=localStorage.getItem('theme')||'dark'})()</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0c0a;--border:#252220;--text:#e6e1d6;--muted:#6a6358;--accent:#c08030;--accent-dim:#6a4818;--ctrl-bg:#161412}
+[data-theme=light]{--bg:#f4efe6;--border:#d8d1c4;--text:#1c1a17;--muted:#9a8f80;--accent:#a06820;--accent-dim:#c89050;--ctrl-bg:#ede8df}
+html{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.75;-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
+body{min-height:100vh;max-width:640px;margin:0 auto;padding:0 32px;display:flex;flex-direction:column;justify-content:center;gap:0}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9998;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");opacity:.28}
+.theme-btn{position:fixed;top:28px;right:28px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:6px;transition:color .15s;line-height:1;z-index:1}
+.theme-btn:hover{color:var(--accent)}
+.hero{animation:rise .8s cubic-bezier(.16,1,.3,1) both}
+.eyebrow{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+.heading{font-family:'Cormorant Garamond',serif;font-size:clamp(36px,9vw,60px);font-weight:300;line-height:1.05;letter-spacing:-.02em;margin-bottom:16px}
+.heading em{color:var(--accent);font-style:italic}
+.body-text{font-size:13px;color:var(--muted);line-height:1.7;max-width:480px;margin-bottom:36px}
+.body-text strong{color:var(--text);font-weight:500}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;cursor:pointer;transition:background .15s,border-color .15s,color .15s,opacity .15s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:var(--bg);border:1px solid var(--accent)}
+.btn-primary:hover{opacity:.82}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--accent-dim);color:var(--text)}
+.divider{height:1px;background:var(--border);margin:44px 0}
+.hint{font-size:11px;color:var(--muted);line-height:1.6}
+.hint a{color:var(--accent);text-decoration:none}
+.hint a:hover{text-decoration:underline}
+.page-tag{display:inline-block;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--bg);background:var(--accent);padding:3px 8px;border-radius:2px;margin-bottom:28px;animation:rise .6s cubic-bezier(.16,1,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:540px){body{padding:0 22px}.theme-btn{top:20px;right:18px}}
+</style>
+</head>
+<body>
+<button class="theme-btn" onclick="toggleTheme()" title="alternar tema">◐</button>
+
+<div class="hero">
+  <span class="page-tag">Em migração</span>
+  <p class="eyebrow">Esta página está sendo transferida</p>
+  <h1 class="heading">Estou<br><em>migrando.</em></h1>
+  <p class="body-text">
+    Este endereço fazia parte da minha presença no <strong>omg.lol</strong> e ainda não foi transferido para o novo sistema.<br><br>
+    Em breve ele estará de volta — ou será redirecionado para o destino certo. Se precisar de algo com urgência, fala comigo diretamente.
+  </p>
+  <div class="actions">
+    <a href="mailto:suporte@lucafchala.com" class="btn btn-primary">✉ suporte@lucafchala.com</a>
+    <a href="https://lucafchala.com" class="btn btn-ghost">Página principal</a>
+  </div>
+</div>
+
+<div class="divider"></div>
+<p class="hint">Procurando por links e atalhos? Veja a lista completa em <a href="https://url.lucafchala.com">url.lucafchala.com</a>.</p>
+
+<script>
+function toggleTheme(){const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;localStorage.setItem('theme',t)}
+</script>
+</body>
+</html>
