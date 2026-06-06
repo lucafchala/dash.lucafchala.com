@@ -184,6 +184,11 @@
       "slug": "teste",
       "destination": "teste",
       "group": "tools"
+    },
+    {
+      "slug": "teste",
+      "destination": "teste",
+      "group": "tools"
     }
   ]
 }
