@@ -156,6 +156,133 @@ dash.lucafchala.com/
 
 ---
 
+## Guia de Design
+
+Este documento descreve o sistema visual usado pelo painel e por todas as páginas do ecossistema (url, 404, pastes, etc.). Novas páginas devem seguir estes padrões para manter consistência.
+
+### Tokens de cor
+
+Definidos como CSS custom properties, com dois temas:
+
+| Token | Dark | Light | Uso |
+|---|---|---|---|
+| `--bg` | `#0d0c0a` | `#f4efe6` | Fundo da página |
+| `--border` | `#252220` | `#d8d1c4` | Bordas, linhas divisórias |
+| `--text` | `#e6e1d6` | `#1c1a17` | Texto principal |
+| `--muted` | `#6a6358` | `#9a8f80` | Texto secundário, labels, ícones |
+| `--accent` | `#c08030` | `#a06820` | Destaque — slugs, links ativos, hover |
+| `--accent-dim` | `#6a4818` | `#c89050` | Destaque suave — bordas de foco, setas |
+| `--ctrl-bg` | `#161412` | `#ede8df` | Fundo de cards, inputs, modais |
+
+O tema padrão é `dark`. A alternância persiste em `localStorage` e é aplicada via `data-theme` no `<html>`.
+
+### Tipografia
+
+| Família | Pesos usados | Aplicação |
+|---|---|---|
+| **Cormorant Garamond** (serif) | 300, 400, 600 | Títulos (`h1.name`), nomes de hubs |
+| **JetBrains Mono** (monospace) | 300, 400, 500 | Todo o restante — corpo, labels, botões |
+
+Ambas as fontes são carregadas via Google Fonts com `<link rel="preload">`.
+
+**Tamanhos de texto comuns:**
+
+| Elemento | Tamanho | Notas |
+|---|---|---|
+| `h1.name` | `clamp(48px, 10vw, 72px)` | `font-weight: 300`, `line-height: 0.92` |
+| `.hub-name` | `16px` | Cormorant Garamond, `font-weight: 600` |
+| Corpo | `14px` | Base do `html` |
+| `.redirect-slug` | `12px` | Cor `--accent` |
+| `.redirect-dest` | `11px` | Cor `--muted`, truncado com ellipsis |
+| Labels / `.micro` | `10px` | `letter-spacing: 0.14em`, uppercase |
+| Botões de ação | `9px` | `letter-spacing: 0.07em`, uppercase |
+| `.group-header` | `9px` | `letter-spacing: 0.12em`, uppercase |
+
+### Layout
+
+- Largura máxima: **680px**, centralizada, com `padding: 48px 32px 72px`.
+- `border-radius` padrão: **3px** em cards, inputs, botões. Modais usam **4px**.
+- Sem sombras — profundidade é indicada apenas por bordas e fundo levemente diferente (`--ctrl-bg`).
+- Textura de ruído sutil via `body::after` com SVG de `feTurbulence` (opacidade ~0.28).
+
+### Estrutura de página
+
+```
+<html data-theme="dark">
+  <head>
+    <!-- Fontes: Cormorant Garamond + JetBrains Mono -->
+    <!-- theme-color: #0d0c0a -->
+    <!-- manifest.json (se PWA) -->
+  </head>
+  <body>
+    <!-- 1. Controls bar (canto superior direito) -->
+    <div class="controls">...</div>
+
+    <!-- 2. Header -->
+    <header>
+      <h1 class="name">Título <em>em itálico accent</em></h1>
+      <p class="micro">subtítulo em caixa alta</p>
+    </header>
+
+    <!-- 3. Sections separadas por .rule -->
+    <div class="rule">NOME DA SEÇÃO</div>
+    <div class="section-content">...</div>
+  </body>
+</html>
+```
+
+### Componentes
+
+#### `.rule` — Divisor de seção
+Linha horizontal com texto centralizado em `--muted`, `font-size: 10px`, `letter-spacing: 0.1em`. Gerada com `::before` e `::after` em flex.
+
+#### `.hub` — Card de serviço
+Card clicável (`<a>`) com borda `--border`, fundo `--ctrl-bg`, `border-radius: 3px`. No hover: `border-color: --accent-dim`, `background: --border`, `translateY(-1px)`. Variante `.hub-primary` ocupa toda a largura com `border-left: 3px solid --accent`.
+
+#### `.act-btn` — Botão de ação inline
+Botão pequeno monospace, borda `--border`, texto `--muted`. No hover: texto `--text`, borda `--accent-dim`. Variante `.ok`: texto e borda `--accent`. Variante `.del`: tons avermelhados.
+
+#### `.ctrl-btn` — Botão de controle (barra superior)
+Sem borda própria, dentro de `.controls-inner`. Texto `--muted`, hover vira `--accent`.
+
+#### `.modal-overlay` — Modal
+Overlay com `rgba(0,0,0,0.72)` e `backdrop-filter: blur(3px)`. Modal interno com fundo `--ctrl-bg`, borda `--border`, `max-width: 520px`.
+
+#### `.save-bar` — Barra de salvamento
+`position: sticky; bottom: 20px`. Aparece com `opacity: 1` e `translateY(0)` quando tem a classe `.visible`.
+
+#### Inputs e selects
+Fundo `--ctrl-bg`, borda `--accent-dim`, cor `--text`, fonte JetBrains Mono `11px`. No foco: borda vira `--accent`.
+
+### Animações
+
+Seções entram com a animação `rise`:
+
+```css
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+```
+
+Aplicada com `animation: rise 0.9s cubic-bezier(0.16,1,0.3,1) Xs both`, onde `X` é um delay escalonado (0s, 0.12s, 0.20s, 0.28s, 0.36s, 0.44s…) para criar efeito cascata.
+
+### Checklist para nova página
+
+- [ ] `<html lang="pt-BR" data-theme="dark">`
+- [ ] Script inline antes do `<style>` para ler `localStorage('theme')` e aplicar `data-theme`
+- [ ] `theme-color` meta tag: `#0d0c0a`
+- [ ] Fontes: Cormorant Garamond + JetBrains Mono via Google Fonts com `preload`
+- [ ] Tokens de cor definidos em `:root` e `[data-theme="light"]`
+- [ ] Ruído de fundo via `body::after` com SVG `feTurbulence`
+- [ ] `max-width: 680px; margin: 0 auto; padding: 48px 32px 72px`
+- [ ] Títulos com `.name` (Cormorant Garamond 300) e `<em>` em `--accent`
+- [ ] Seções separadas por `.rule`
+- [ ] Botões usando `.act-btn` ou `.ctrl-btn`
+- [ ] Animação `rise` com delays escalonados nas seções
+
+---
+
 ## Tecnologias
 
 - HTML / CSS / JavaScript puro — sem frameworks, sem build step
