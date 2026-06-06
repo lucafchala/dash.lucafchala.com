@@ -657,62 +657,96 @@
 <script>(function(){document.documentElement.dataset.theme=localStorage.getItem('theme')||'dark'})()</\script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#0d0c0a;--border:#252220;--text:#e6e1d6;--muted:#6a6358;--accent:#c08030;--ctrl-bg:#161412}
-[data-theme=light]{--bg:#f4efe6;--border:#d8d1c4;--text:#1c1a17;--muted:#9a8f80;--accent:#a06820;--ctrl-bg:#ede8df}
+:root{--bg:#0d0c0a;--border:#252220;--text:#e6e1d6;--muted:#6a6358;--accent:#c08030;--accent-dim:#6a4818;--ctrl-bg:#161412}
+[data-theme=light]{--bg:#f4efe6;--border:#d8d1c4;--text:#1c1a17;--muted:#9a8f80;--accent:#a06820;--accent-dim:#c89050;--ctrl-bg:#ede8df}
 html{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.75;-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
 body{min-height:100vh;max-width:720px;margin:0 auto;padding:48px 32px 72px}
-header{margin-bottom:48px;animation:rise .9s cubic-bezier(.16,1,.3,1) both}
-.site-title{font-family:'Cormorant Garamond',serif;font-size:clamp(28px,7vw,44px);font-weight:300;line-height:1;letter-spacing:-.02em;color:var(--accent);margin-bottom:8px}
-.site-sub{color:var(--muted);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
-.controls{position:absolute;top:32px;right:32px}
-.ctrl-btn{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px 8px;transition:color .15s}
+.controls{display:flex;justify-content:flex-end;margin-bottom:24px}
+.controls-inner{display:flex;align-items:center;gap:4px;background:var(--ctrl-bg);border:1px solid var(--border);border-radius:3px;padding:4px 6px;transition:background .25s,border-color .25s}
+.ctrl-btn{background:none;border:none;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.09em;text-transform:uppercase;padding:4px 7px;cursor:pointer;transition:color .15s;border-radius:2px;line-height:1}
 .ctrl-btn:hover{color:var(--accent)}
-.group{margin-bottom:40px;animation:rise .9s cubic-bezier(.16,1,.3,1) both}
-.group-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:16px}
-.purl-row{display:flex;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px solid var(--border)}
-.purl-row:last-child{border-bottom:none}
-.purl-slug{color:var(--accent);text-decoration:none;font-size:13px;font-weight:500;flex-shrink:0;transition:opacity .15s}
-.purl-slug:hover{opacity:.7}
-.purl-sep{color:var(--border);flex-shrink:0}
-.purl-dest{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.loading{color:var(--muted);font-size:12px}
-@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:540px){body{padding:32px 20px 52px}.controls{top:24px;right:20px}}
+#btn-theme{font-size:15px;padding:2px 7px}
+header{margin-bottom:52px;animation:rise .9s cubic-bezier(.16,1,.3,1) both}
+.name{font-family:'Cormorant Garamond',serif;font-size:clamp(48px,10vw,72px);font-weight:300;line-height:.92;letter-spacing:-.025em;margin-bottom:18px}
+.tagline{color:var(--muted);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.micro{color:var(--muted);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.rule{display:flex;align-items:center;gap:16px;margin:36px 0;color:var(--muted);font-size:10px;letter-spacing:.1em}
+.rule::before,.rule::after{content:'';flex:1;height:1px;background:var(--border)}
+.section-label{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.redirects-section{animation:rise .9s cubic-bezier(.16,1,.3,1) .1s both}
+.group-header{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:16px 0 8px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.group-header::after{content:'';flex:1;height:1px;background:var(--border)}
+.group-header:first-child{padding-top:8px}
+.group-header:hover{color:var(--text)}
+.group-toggle{font-size:8px;flex-shrink:0;transition:transform .2s;color:var(--muted)}
+.group-header.collapsed .group-toggle{transform:rotate(-90deg)}
+.group-items{overflow:hidden}
+.group-items.collapsed{display:none}
+.group-count{font-size:8px;color:var(--muted);opacity:.7}
+.redirect-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.redirect-item:last-child{border-bottom:none}
+.redirect-slug{font-size:12px;color:var(--accent);flex-shrink:0}
+.redirect-dest{font-size:11px;color:var(--muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.redirect-actions{display:flex;gap:5px;flex-shrink:0}
+.act-btn{background:none;border:1px solid var(--border);border-radius:2px;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.07em;text-transform:uppercase;padding:3px 7px;cursor:pointer;transition:color .15s,border-color .15s;text-decoration:none;display:inline-flex;align-items:center;line-height:1.2}
+.act-btn:hover{color:var(--text);border-color:var(--accent-dim)}
+.act-btn.ok{color:var(--accent);border-color:var(--accent-dim)}
+.empty{padding:20px 0;color:var(--muted);font-size:11px;text-align:center}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:540px){body{padding:32px 22px 52px}}
+@media(max-width:380px){.redirect-dest{display:none}}
 </style>
 </head>
 <body>
-<div class="controls"><button class="ctrl-btn" onclick="toggleTheme()" title="toggle theme">◐</button></div>
-<header><h1 class="site-title">url.lucafchala.com</h1><p class="site-sub">PURLs — permanent redirects</p></header>
-<div id="app"><p class="loading">carregando…</p></div>
+<div class="controls"><div class="controls-inner"><button class="ctrl-btn" id="btn-theme" onclick="toggleTheme()">◐</button></div></div>
+<header>
+  <h1 class="name">url.<em style="font-style:normal;color:var(--muted);font-weight:300">lucafchala</em>.com</h1>
+  <p class="micro">redirecionamentos permanentes</p>
+</header>
+<div class="rule">PURLS</div>
+<div class="redirects-section"><div id="redirects-list"><p class="empty" style="color:var(--muted)">carregando…</p></div></div>
 <script>
 function toggleTheme(){const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;localStorage.setItem('theme',t)}
-function render({redirects=[]}){
-  const groups={};
-  redirects.forEach(r=>{(groups[r.group]=groups[r.group]||[]).push(r)});
-  const app=document.getElementById('app');
-  app.innerHTML='';
-  Object.keys(groups).sort().forEach((g,i)=>{
-    const sec=document.createElement('section');
-    sec.className='group';
-    sec.style.animationDelay=(i*.08)+'s';
-    const label=document.createElement('div');
-    label.className='group-label';
-    label.textContent=g;
-    sec.appendChild(label);
-    groups[g].forEach(r=>{
-      const row=document.createElement('div');
-      row.className='purl-row';
-      try{const u=new URL(r.destination);var dest=u.hostname+u.pathname.replace(/\\/$/,'')}catch(e){var dest=r.destination}
-      row.innerHTML=\`<a class="purl-slug" href="/\${r.slug}" target="_blank">→ \${r.slug}</a><span class="purl-sep">·</span><span class="purl-dest" title="\${r.destination}">\${dest}</span>\`;
-      sec.appendChild(row);
-    });
-    app.appendChild(sec);
-  });
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function shortHost(url){try{const u=new URL(url);const h=u.hostname.replace(/^www\\./,'');const p=u.pathname!=='/'?u.pathname.slice(0,14)+(u.pathname.length>15?'…':''):'';return h+p}catch{return url.slice(0,24)+'…'}}
+const GROUP_LABELS={contact:'contato',events:'eventos',video:'vídeo',tools:'ferramentas'};
+const ORDER=['contact','events','video','tools'];
+const collapsed=new Set(['events','video']);
+function toggleGroup(g){collapsed.has(g)?collapsed.delete(g):collapsed.add(g);render()}
+let _data=[];
+function render(){
+  const grouped={};
+  _data.forEach(r=>{const g=r.group||'tools';(grouped[g]=grouped[g]||[]).push(r)});
+  const keys=[...ORDER.filter(k=>grouped[k]),...Object.keys(grouped).filter(k=>!ORDER.includes(k))];
+  document.getElementById('redirects-list').innerHTML=keys.map(g=>{
+    const col=collapsed.has(g);
+    const rows=grouped[g].map(r=>\`<div class="redirect-item">
+      <span class="redirect-slug">/\${esc(r.slug)}</span>
+      <span class="redirect-dest" title="\${esc(r.destination)}">\${esc(shortHost(r.destination))}</span>
+      <div class="redirect-actions">
+        <button class="act-btn" onclick="doCopy(this)" data-slug="\${esc(r.slug)}" data-url="https://url.lucafchala.com/\${esc(r.slug)}">copiar</button>
+        <a class="act-btn" href="\${esc(r.destination)}" target="_blank" rel="noopener noreferrer">abrir</a>
+      </div>
+    </div>\`).join('');
+    return \`<div class="group-header\${col?' collapsed':''}" onclick="toggleGroup('\${g}')">
+      <span class="group-toggle">▾</span>
+      \${esc(GROUP_LABELS[g]||g)}
+      <span class="group-count">\${grouped[g].length}</span>
+    </div>
+    <div class="group-items\${col?' collapsed':''}">\${rows}</div>\`;
+  }).join('');
 }
+function doCopy(btn){
+  navigator.clipboard.writeText(btn.dataset.url).then(()=>{
+    const orig=btn.textContent;btn.textContent='copiado!';btn.classList.add('ok');
+    setTimeout(()=>{btn.textContent=orig;btn.classList.remove('ok')},2000);
+  }).catch(()=>{});
+}
+function load(data){_data=data.redirects||[];render()}
 fetch('/data.json').then(r=>{if(!r.ok)throw new Error(r.status);return r.json()})
-  .then(render)
-  .catch(()=>fetch('https://dash.lucafchala.com/data.json').then(r=>r.json()).then(render)
-  .catch(()=>{document.getElementById('app').innerHTML='<p class="loading">erro ao carregar redirects.</p>'}));
+  .then(load)
+  .catch(()=>fetch('https://dash.lucafchala.com/data.json').then(r=>r.json()).then(load)
+  .catch(()=>{document.getElementById('redirects-list').innerHTML='<p class="empty">erro ao carregar redirects.</p>'}));
 </\script>
 </body>
 </html>
