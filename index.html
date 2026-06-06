@@ -117,9 +117,15 @@
         .edit-select { background: var(--ctrl-bg); border: 1px solid var(--accent-dim); color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 4px; border-radius: 2px; outline: none; }
 
         /* ── Rows ── */
-        .group-header { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); padding: 16px 0 8px; display: flex; align-items: center; gap: 10px; }
+        .group-header { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); padding: 16px 0 8px; display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
         .group-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
         .group-header:first-child { padding-top: 8px; }
+        .group-header:hover { color: var(--text); }
+        .group-toggle { font-size: 8px; flex-shrink: 0; transition: transform 0.2s; color: var(--muted); }
+        .group-header.collapsed .group-toggle { transform: rotate(-90deg); }
+        .group-items { overflow: hidden; }
+        .group-items.collapsed { display: none; }
+        .group-count { font-size: 8px; color: var(--muted); opacity: 0.7; }
 
         .redirect-item, .paste-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
         .redirect-item:last-child, .paste-item:last-child { border-bottom: none; }
@@ -496,6 +502,13 @@
     let redirects = [];
     let savedRedirects = [];
     let editingPurl = null;
+    const collapsedGroups = new Set(['events', 'video']);
+
+    function toggleGroup(g) {
+        if (collapsedGroups.has(g)) collapsedGroups.delete(g);
+        else collapsedGroups.add(g);
+        renderRedirects(el('search').value);
+    }
 
     function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     function shortHost(url) {
@@ -512,6 +525,7 @@
         const auth = isAuth();
         const q = (filter || '').toLowerCase().trim();
         const items = q ? redirects.filter(r => r.slug.toLowerCase().includes(q) || r.destination.toLowerCase().includes(q)) : redirects;
+        if (q) collapsedGroups.clear();
 
         /* add form visibility */
         el('purl-add-form').classList.toggle('visible', auth && !q);
@@ -532,6 +546,7 @@
         const ORDER = ['contact', 'events', 'video', 'tools'];
         const keys = [...ORDER.filter(k => grouped[k]), ...Object.keys(grouped).filter(k => !ORDER.includes(k))];
         return keys.map(g => {
+            const collapsed = collapsedGroups.has(g);
             const rows = grouped[g].map(r => {
                 const idx = redirects.indexOf(r);
                 if (editable && editingPurl === idx) {
@@ -558,7 +573,12 @@
                     </div>
                 </div>`;
             }).join('');
-            return `<div class="group-header">${esc(s().groups[g] || g)}</div>${rows}`;
+            return `<div class="group-header${collapsed ? ' collapsed' : ''}" onclick="toggleGroup('${g}')">
+                <span class="group-toggle">▾</span>
+                ${esc(s().groups[g] || g)}
+                <span class="group-count">${grouped[g].length}</span>
+            </div>
+            <div class="group-items${collapsed ? ' collapsed' : ''}">${rows}</div>`;
         }).join('');
     }
 
