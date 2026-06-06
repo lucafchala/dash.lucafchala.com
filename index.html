@@ -646,21 +646,97 @@
     }
     function genDataJson(items) { return JSON.stringify({ redirects: items }, null, 2) + '\n'; }
 
+    function genUrlIndex() {
+        return `<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>url.lucafchala.com</title><meta name="theme-color" content="#0d0c0a">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script>(function(){document.documentElement.dataset.theme=localStorage.getItem('theme')||'dark'})()</\script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0c0a;--border:#252220;--text:#e6e1d6;--muted:#6a6358;--accent:#c08030;--ctrl-bg:#161412}
+[data-theme=light]{--bg:#f4efe6;--border:#d8d1c4;--text:#1c1a17;--muted:#9a8f80;--accent:#a06820;--ctrl-bg:#ede8df}
+html{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.75;-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
+body{min-height:100vh;max-width:720px;margin:0 auto;padding:48px 32px 72px}
+header{margin-bottom:48px;animation:rise .9s cubic-bezier(.16,1,.3,1) both}
+.site-title{font-family:'Cormorant Garamond',serif;font-size:clamp(28px,7vw,44px);font-weight:300;line-height:1;letter-spacing:-.02em;color:var(--accent);margin-bottom:8px}
+.site-sub{color:var(--muted);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.controls{position:absolute;top:32px;right:32px}
+.ctrl-btn{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px 8px;transition:color .15s}
+.ctrl-btn:hover{color:var(--accent)}
+.group{margin-bottom:40px;animation:rise .9s cubic-bezier(.16,1,.3,1) both}
+.group-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.purl-row{display:flex;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px solid var(--border)}
+.purl-row:last-child{border-bottom:none}
+.purl-slug{color:var(--accent);text-decoration:none;font-size:13px;font-weight:500;flex-shrink:0;transition:opacity .15s}
+.purl-slug:hover{opacity:.7}
+.purl-sep{color:var(--border);flex-shrink:0}
+.purl-dest{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.loading{color:var(--muted);font-size:12px}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:540px){body{padding:32px 20px 52px}.controls{top:24px;right:20px}}
+</style>
+</head>
+<body>
+<div class="controls"><button class="ctrl-btn" onclick="toggleTheme()" title="toggle theme">◐</button></div>
+<header><h1 class="site-title">url.lucafchala.com</h1><p class="site-sub">PURLs — permanent redirects</p></header>
+<div id="app"><p class="loading">carregando…</p></div>
+<script>
+function toggleTheme(){const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;localStorage.setItem('theme',t)}
+fetch('/data.json').then(r=>r.json()).then(({redirects=[]})=>{
+  const groups={};
+  redirects.forEach(r=>{(groups[r.group]=groups[r.group]||[]).push(r)});
+  const app=document.getElementById('app');
+  app.innerHTML='';
+  Object.keys(groups).sort().forEach((g,i)=>{
+    const sec=document.createElement('section');
+    sec.className='group';
+    sec.style.animationDelay=(i*.08)+'s';
+    const label=document.createElement('div');
+    label.className='group-label';
+    label.textContent=g;
+    sec.appendChild(label);
+    groups[g].forEach(r=>{
+      const row=document.createElement('div');
+      row.className='purl-row';
+      const dest=new URL(r.destination).hostname+new URL(r.destination).pathname.replace(/\\/$/,'');
+      row.innerHTML=\`<a class="purl-slug" href="/\${r.slug}" target="_blank">→ \${r.slug}</a><span class="purl-sep">·</span><span class="purl-dest" title="\${r.destination}">\${dest}</span>\`;
+      sec.appendChild(row);
+    });
+    app.appendChild(sec);
+  });
+}).catch(()=>{document.getElementById('app').innerHTML='<p class="loading">erro ao carregar redirects.</p>'});
+</\script>
+</body>
+</html>
+`;
+    }
+
     async function savePurlsToGitHub() {
         const btn = el('lbl-purl-save');
         btn.textContent = '…'; btn.disabled = true;
         try {
             const { repoHome, repoDash, repoUrl } = cfg();
             const redirectsContent = genRedirectsFile(redirects);
+            const dataJson = genDataJson(redirects);
             const [hf, df] = await Promise.all([getFile(repoHome, '_redirects'), getFile(repoDash, 'data.json')]);
             const writes = [
                 putFile(repoHome, '_redirects', redirectsContent, hf.sha, 'update redirects via dash.lucafchala.com'),
-                putFile(repoDash, 'data.json', genDataJson(redirects), df.sha, 'update data.json via dash.lucafchala.com'),
+                putFile(repoDash, 'data.json', dataJson, df.sha, 'update data.json via dash.lucafchala.com'),
             ];
             /* also sync url.lucafchala.com if configured and reachable */
             if (repoUrl) {
-                const uf = await getFile(repoUrl, '_redirects').catch(() => null);
+                const [uf, udf, uif] = await Promise.all([
+                    getFile(repoUrl, '_redirects').catch(() => null),
+                    getFile(repoUrl, 'data.json').catch(() => null),
+                    getFile(repoUrl, 'index.html').catch(() => null),
+                ]);
                 if (uf) writes.push(putFile(repoUrl, '_redirects', redirectsContent, uf.sha, 'sync redirects via dash.lucafchala.com'));
+                writes.push(putFile(repoUrl, 'data.json', dataJson, udf ? udf.sha : undefined, 'sync data.json via dash.lucafchala.com'));
+                writes.push(putFile(repoUrl, 'index.html', genUrlIndex(), uif ? uif.sha : undefined, 'update index via dash.lucafchala.com'));
             }
             await Promise.all(writes);
             savedRedirects = JSON.parse(JSON.stringify(redirects));
