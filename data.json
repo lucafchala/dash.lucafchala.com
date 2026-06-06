@@ -182,12 +182,7 @@
     },
     {
       "slug": "teste-api",
-      "destination": "https://lucafchala.com",
-      "group": "tools"
-    },
-    {
-      "slug": "testedash",
-      "destination": "claude.ai",
+      "destination": "https://claude.ai",
       "group": "tools"
     }
   ]
