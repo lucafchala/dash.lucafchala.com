@@ -1,11 +1,3 @@
-# dash.lucafchala.com
-
-Painel de controle pessoal — gerencia redirecionamentos (PURLs), pastes e links rápidos para todos os serviços do ecossistema lucafchala.com.
-
-Disponível em **[dash.lucafchala.com](https://dash.lucafchala.com)**.
-
----
-
 ## Visão geral
 
 O painel é uma **single-page app** em HTML/CSS/JS puro, sem frameworks ou build step. Toda a persistência é feita via **GitHub API** usando um Personal Access Token armazenado localmente no navegador. Não há backend — o GitHub serve como banco de dados.
