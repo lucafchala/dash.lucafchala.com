@@ -182,7 +182,7 @@
     },
     {
       "slug": "teste",
-      "destination": "theannoyingsite.com",
+      "destination": "https://theannoyingsite.com",
       "group": "tools"
     }
   ]
