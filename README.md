@@ -1,3 +1,5 @@
+> Parte do [ecossistema lucafchala.com](https://github.com/lucafchala/lucafchala.com#the-ecosystem). Esta é a peça que **escreve nos outros repositórios** (PURLs e pastes) via API do GitHub. Design system e convenções compartilhadas: [README do hub](https://github.com/lucafchala/lucafchala.com#design-system).
+
 ## Visão geral
 
 O painel é uma **single-page app** em HTML/CSS/JS puro, sem frameworks ou build step. Toda a persistência é feita via **GitHub API** usando um Personal Access Token armazenado localmente no navegador. Não há backend — o GitHub serve como banco de dados.
