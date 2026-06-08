@@ -208,23 +208,7 @@
         <div class="login-box">
             <h1 class="login-title">Painel <em>de</em><br>Controle</h1>
 
-            <!-- First-run: create password -->
-            <div id="login-setup" style="display:none">
-                <div class="login-fields">
-                    <div class="login-field">
-                        <label>Criar senha</label>
-                        <input type="password" id="setup-pw" placeholder="mínimo 6 caracteres" autocomplete="new-password">
-                    </div>
-                    <div class="login-field">
-                        <label>Confirmar senha</label>
-                        <input type="password" id="setup-pw2" placeholder="repita a senha" autocomplete="new-password">
-                    </div>
-                    <span class="login-msg" id="setup-error"></span>
-                    <button class="login-btn" id="setup-btn" onclick="submitSetup()">Definir senha</button>
-                </div>
-            </div>
-
-            <!-- Normal login -->
+            <!-- Login -->
             <div id="login-form" style="display:none">
                 <div class="login-fields">
                     <div class="login-field">
@@ -413,6 +397,7 @@
 
     <script>
     /* ── Auth: PBKDF2 password + Turnstile + rate limiting ── */
+    const _PW_HASH = 'pbkdf2:100000:3569b7851043a8783b34c589152ccaf2:41caa916a26e6be8d4103c1d1e45f90166f0e56975490dabc3d0299a695ceb26';
     const _PW_KEY = 'dash_pw_hash';
     const _RL_KEY = 'dash_rl';
     const _RL_MAX = 5;
@@ -454,18 +439,13 @@
     function _elLogin(id) { return document.getElementById(id); }
 
     function initAuth() {
+        /* Seed the hash on first load — prevents any first-run setup screen */
+        if (!localStorage.getItem(_PW_KEY)) localStorage.setItem(_PW_KEY, _PW_HASH);
         if (sessionStorage.getItem('dash_authed') === '1') { _unlockApp(); return; }
-        const hash = localStorage.getItem(_PW_KEY);
-        if (!hash) {
-            _elLogin('login-setup').style.display = '';
-            setTimeout(() => _elLogin('setup-pw').focus(), 80);
-        } else {
-            _elLogin('login-form').style.display = '';
-            _updateLockState();
-            setTimeout(() => _elLogin('login-pw').focus(), 80);
-            _elLogin('login-pw').addEventListener('keydown', e => { if (e.key === 'Enter') submitLogin(); });
-        }
-        _elLogin('setup-pw2').addEventListener('keydown', e => { if (e.key === 'Enter') submitSetup(); });
+        _elLogin('login-form').style.display = '';
+        _updateLockState();
+        setTimeout(() => _elLogin('login-pw').focus(), 80);
+        _elLogin('login-pw').addEventListener('keydown', e => { if (e.key === 'Enter') submitLogin(); });
     }
 
     function _updateLockState() {
@@ -475,19 +455,6 @@
         btn.disabled = locked;
         if (locked) { lockedEl.textContent = 'Muitas tentativas. Aguarde alguns minutos.'; lockedEl.classList.add('visible'); }
         else { lockedEl.classList.remove('visible'); }
-    }
-
-    async function submitSetup() {
-        const pw = _elLogin('setup-pw').value;
-        const pw2 = _elLogin('setup-pw2').value;
-        const errEl = _elLogin('setup-error');
-        if (pw.length < 6) { errEl.textContent = 'Mínimo 6 caracteres.'; errEl.classList.add('visible'); return; }
-        if (pw !== pw2) { errEl.textContent = 'As senhas não coincidem.'; errEl.classList.add('visible'); return; }
-        errEl.classList.remove('visible');
-        const btn = _elLogin('setup-btn');
-        btn.disabled = true; btn.textContent = '…';
-        localStorage.setItem(_PW_KEY, await _hashPassword(pw));
-        _unlockApp();
     }
 
     async function submitLogin() {
