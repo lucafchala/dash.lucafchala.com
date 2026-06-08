@@ -14,6 +14,7 @@
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=JetBrains+Mono:wght@300;400;500&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
     <script>(function(){document.documentElement.dataset.theme=localStorage.getItem('theme')||'dark'})();</script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -175,6 +176,25 @@
         /* ── Animation ── */
         @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* ── Login overlay ── */
+        #login-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 40px 20px; transition: opacity 0.2s; }
+        #login-overlay.hidden { display: none; }
+        .login-box { width: 100%; max-width: 340px; animation: rise 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+        .login-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(36px, 9vw, 52px); font-weight: 300; line-height: 0.95; letter-spacing: -0.025em; margin-bottom: 36px; }
+        .login-title em { font-style: italic; color: var(--accent); }
+        .login-fields { display: flex; flex-direction: column; gap: 18px; }
+        .login-field { display: flex; flex-direction: column; gap: 6px; }
+        .login-field label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+        .login-field input { background: var(--ctrl-bg); border: 1px solid var(--border); border-radius: 2px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 10px 12px; outline: none; transition: border-color 0.15s; width: 100%; }
+        .login-field input:focus { border-color: var(--accent-dim); }
+        .login-msg { font-size: 11px; color: #c04040; display: none; margin-top: 2px; }
+        .login-msg.visible { display: block; }
+        .login-msg.muted { color: var(--muted); }
+        .login-btn { background: none; border: 1px solid var(--accent-dim); border-radius: 2px; color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 10px 22px; cursor: pointer; transition: border-color 0.15s, opacity 0.15s; margin-top: 6px; }
+        .login-btn:hover:not(:disabled) { border-color: var(--accent); }
+        .login-btn:disabled { opacity: 0.45; cursor: default; }
+        .cf-turnstile { margin-top: 4px; }
+
         /* ── Responsive ── */
         @media (max-width: 540px) { body { padding: 32px 22px 52px; } .hubs { grid-template-columns: 1fr 1fr; } .repos { grid-template-columns: 1fr; } }
         @media (max-width: 380px) { .hubs { grid-template-columns: 1fr; } .redirect-dest, .paste-desc-label { display: none; } }
@@ -182,6 +202,46 @@
 </head>
 
 <body>
+
+    <!-- Login overlay -->
+    <div id="login-overlay">
+        <div class="login-box">
+            <h1 class="login-title">Painel <em>de</em><br>Controle</h1>
+
+            <!-- First-run: create password -->
+            <div id="login-setup" style="display:none">
+                <div class="login-fields">
+                    <div class="login-field">
+                        <label>Criar senha</label>
+                        <input type="password" id="setup-pw" placeholder="mínimo 6 caracteres" autocomplete="new-password">
+                    </div>
+                    <div class="login-field">
+                        <label>Confirmar senha</label>
+                        <input type="password" id="setup-pw2" placeholder="repita a senha" autocomplete="new-password">
+                    </div>
+                    <span class="login-msg" id="setup-error"></span>
+                    <button class="login-btn" id="setup-btn" onclick="submitSetup()">Definir senha</button>
+                </div>
+            </div>
+
+            <!-- Normal login -->
+            <div id="login-form" style="display:none">
+                <div class="login-fields">
+                    <div class="login-field">
+                        <label>Senha</label>
+                        <input type="password" id="login-pw" placeholder="…" autocomplete="current-password">
+                    </div>
+                    <div class="cf-turnstile" data-sitekey="0x4AAAAAADg-tbuoPRO9s2I5" data-theme="auto"></div>
+                    <span class="login-msg" id="login-error"></span>
+                    <span class="login-msg muted" id="login-locked"></span>
+                    <button class="login-btn" id="login-btn" onclick="submitLogin()">Entrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App content (hidden until authenticated) -->
+    <div id="app" style="display:none">
 
     <div class="controls">
         <div class="controls-inner">
@@ -349,7 +409,117 @@
         </div>
     </div>
 
+    </div><!-- #app -->
+
     <script>
+    /* ── Auth: PBKDF2 password + Turnstile + rate limiting ── */
+    const _PW_KEY = 'dash_pw_hash';
+    const _RL_KEY = 'dash_rl';
+    const _RL_MAX = 5;
+    const _RL_WINDOW = 15 * 60 * 1000;
+
+    function _hexToBytes(hex) { const a = new Uint8Array(hex.length / 2); for (let i = 0; i < a.length; i++) a[i] = parseInt(hex.slice(i*2,i*2+2),16); return a; }
+    function _bytesToHex(u8) { return Array.from(u8).map(b => b.toString(16).padStart(2,'0')).join(''); }
+
+    async function _hashPassword(password, saltHex) {
+        const enc = new TextEncoder();
+        const salt = saltHex ? _hexToBytes(saltHex) : crypto.getRandomValues(new Uint8Array(16));
+        const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+        const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: 100000 }, key, 256);
+        return `pbkdf2:100000:${_bytesToHex(salt)}:${_bytesToHex(new Uint8Array(bits))}`;
+    }
+
+    async function _verifyPassword(password, stored) {
+        if (!stored || !stored.startsWith('pbkdf2:')) return false;
+        const [,, saltHex] = stored.split(':');
+        const candidate = await _hashPassword(password, saltHex);
+        if (candidate.length !== stored.length) return false;
+        let diff = 0;
+        for (let i = 0; i < candidate.length; i++) diff |= candidate.charCodeAt(i) ^ stored.charCodeAt(i);
+        return diff === 0;
+    }
+
+    function _rlGet() { try { return JSON.parse(localStorage.getItem(_RL_KEY)) || {}; } catch { return {}; } }
+    function _rlAllowed() {
+        const { count = 0, windowStart = 0 } = _rlGet();
+        return Date.now() - windowStart > _RL_WINDOW || count < _RL_MAX;
+    }
+    function _rlRecord() {
+        const rl = _rlGet(); const now = Date.now();
+        const inWin = now - (rl.windowStart || 0) <= _RL_WINDOW;
+        localStorage.setItem(_RL_KEY, JSON.stringify({ count: inWin ? (rl.count||0)+1 : 1, windowStart: inWin ? rl.windowStart : now }));
+    }
+    function _rlReset() { localStorage.removeItem(_RL_KEY); }
+
+    function _elLogin(id) { return document.getElementById(id); }
+
+    function initAuth() {
+        if (sessionStorage.getItem('dash_authed') === '1') { _unlockApp(); return; }
+        const hash = localStorage.getItem(_PW_KEY);
+        if (!hash) {
+            _elLogin('login-setup').style.display = '';
+            setTimeout(() => _elLogin('setup-pw').focus(), 80);
+        } else {
+            _elLogin('login-form').style.display = '';
+            _updateLockState();
+            setTimeout(() => _elLogin('login-pw').focus(), 80);
+            _elLogin('login-pw').addEventListener('keydown', e => { if (e.key === 'Enter') submitLogin(); });
+        }
+        _elLogin('setup-pw2').addEventListener('keydown', e => { if (e.key === 'Enter') submitSetup(); });
+    }
+
+    function _updateLockState() {
+        const locked = !_rlAllowed();
+        const btn = _elLogin('login-btn');
+        const lockedEl = _elLogin('login-locked');
+        btn.disabled = locked;
+        if (locked) { lockedEl.textContent = 'Muitas tentativas. Aguarde alguns minutos.'; lockedEl.classList.add('visible'); }
+        else { lockedEl.classList.remove('visible'); }
+    }
+
+    async function submitSetup() {
+        const pw = _elLogin('setup-pw').value;
+        const pw2 = _elLogin('setup-pw2').value;
+        const errEl = _elLogin('setup-error');
+        if (pw.length < 6) { errEl.textContent = 'Mínimo 6 caracteres.'; errEl.classList.add('visible'); return; }
+        if (pw !== pw2) { errEl.textContent = 'As senhas não coincidem.'; errEl.classList.add('visible'); return; }
+        errEl.classList.remove('visible');
+        const btn = _elLogin('setup-btn');
+        btn.disabled = true; btn.textContent = '…';
+        localStorage.setItem(_PW_KEY, await _hashPassword(pw));
+        _unlockApp();
+    }
+
+    async function submitLogin() {
+        if (!_rlAllowed()) { _updateLockState(); return; }
+        const pw = _elLogin('login-pw').value;
+        const tsToken = document.querySelector('[name="cf-turnstile-response"]')?.value || '';
+        const errEl = _elLogin('login-error');
+        if (!tsToken) { errEl.textContent = 'Complete a verificação de segurança.'; errEl.classList.add('visible'); return; }
+        const btn = _elLogin('login-btn');
+        btn.disabled = true; btn.textContent = '…';
+        const ok = await _verifyPassword(pw, localStorage.getItem(_PW_KEY));
+        if (ok) {
+            _rlReset();
+            _unlockApp();
+        } else {
+            _rlRecord();
+            _updateLockState();
+            errEl.textContent = 'Senha incorreta.';
+            errEl.classList.add('visible');
+            btn.disabled = !_rlAllowed(); btn.textContent = 'Entrar';
+            if (window.turnstile) window.turnstile.reset();
+            _elLogin('login-pw').value = '';
+            _elLogin('login-pw').focus();
+        }
+    }
+
+    function _unlockApp() {
+        sessionStorage.setItem('dash_authed', '1');
+        _elLogin('login-overlay').classList.add('hidden');
+        document.getElementById('app').style.display = '';
+    }
+
     /* ── i18n ── */
     const STRINGS = {
         pt: {
@@ -1198,6 +1368,7 @@ function toggleTheme(){const next=document.documentElement.dataset.theme==='dark
 
     applyLang(lang);
     updateGhBtn();
+    initAuth();
 
     /* ── PWA ── */
     if ('serviceWorker' in navigator) {
