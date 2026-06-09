@@ -4,11 +4,15 @@ const TS_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify
 const RL_MAX = 5;
 const RL_WINDOW = 15 * 60 * 1000; // 15 min
 
-/* In-memory rate limit — resets on Worker restart, good enough for a personal dashboard */
+/* Rate limit backed by KV when a DASH_KV binding exists (shared across
+   isolates); falls back to in-memory, which resets on cold start. */
 const _rl = new Map();
+const RL_PREFIX = 'rl:';
 
 export async function onRequest({ request, env, next }) {
   const url = new URL(request.url);
+
+  if (url.pathname === '/api/healthz') return next();
 
   if (url.pathname === '/login') {
     if (request.method === 'GET') return loginPage();
@@ -29,24 +33,37 @@ async function isAuthed(request, env) {
   return verifyToken(match[1], env.DASH_PASSWORD);
 }
 
-function rlCheck(ip) {
+async function rlCheck(env, ip) {
+  if (env.DASH_KV) {
+    const n = parseInt(await env.DASH_KV.get(RL_PREFIX + ip) || '0', 10);
+    return n < RL_MAX;
+  }
   const now = Date.now();
   const entry = _rl.get(ip) || { count: 0, windowStart: now };
   if (now - entry.windowStart > RL_WINDOW) { _rl.set(ip, { count: 0, windowStart: now }); return true; }
   return entry.count < RL_MAX;
 }
-function rlRecord(ip) {
+async function rlRecord(env, ip) {
+  if (env.DASH_KV) {
+    const key = RL_PREFIX + ip;
+    const n = parseInt(await env.DASH_KV.get(key) || '0', 10);
+    await env.DASH_KV.put(key, String(n + 1), { expirationTtl: Math.ceil(RL_WINDOW / 1000) });
+    return;
+  }
   const now = Date.now();
   const entry = _rl.get(ip) || { count: 0, windowStart: now };
   if (now - entry.windowStart > RL_WINDOW) { _rl.set(ip, { count: 1, windowStart: now }); }
   else { _rl.set(ip, { ...entry, count: entry.count + 1 }); }
 }
-function rlReset(ip) { _rl.delete(ip); }
+async function rlReset(env, ip) {
+  if (env.DASH_KV) { await env.DASH_KV.delete(RL_PREFIX + ip); return; }
+  _rl.delete(ip);
+}
 
 async function handleLogin(request, env) {
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
 
-  if (!rlCheck(ip)) return loginPage(true, 'Muitas tentativas. Aguarde alguns minutos.');
+  if (!await rlCheck(env, ip)) return loginPage(true, 'Muitas tentativas. Aguarde alguns minutos.');
 
   let password, tsToken, next;
   try {
@@ -62,10 +79,10 @@ async function handleLogin(request, env) {
   if (!tsOk) return loginPage(true, 'Verificação de segurança falhou. Recarregue e tente novamente.');
 
   if (!env.DASH_PASSWORD || password !== env.DASH_PASSWORD) {
-    rlRecord(ip);
+    await rlRecord(env, ip);
     return loginPage(true, 'Senha incorreta.');
   }
-  rlReset(ip);
+  await rlReset(env, ip);
 
   const token = await makeToken(env.DASH_PASSWORD);
   const dest = /^\/[^/]/.test(next) ? next : '/';
