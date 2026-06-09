@@ -437,6 +437,10 @@
     /* ── GitHub API ── */
     const GH_DEFAULTS = { repoHome: 'lucafchala/lucafchala.com', repoDash: 'lucafchala/dash.lucafchala.com', repoPaste: 'lucafchala/paste.lucafchala.com', repoUrl: 'lucafchala/url.lucafchala.com' };
 
+    /* When GH_PAT is set as a Pages secret, calls go through /api/github and
+       no token needs to live in localStorage. Probed at bootstrap. */
+    let serverGh = false;
+
     function cfg() {
         return {
             pat: localStorage.getItem('gh_pat') || '',
@@ -446,7 +450,7 @@
             repoUrl: localStorage.getItem('gh_repo_url') || GH_DEFAULTS.repoUrl,
         };
     }
-    function isAuth() { return !!cfg().pat; }
+    function isAuth() { return serverGh || !!cfg().pat; }
 
     function b64enc(str) {
         const bytes = new TextEncoder().encode(str);
@@ -460,15 +464,21 @@
     }
 
     async function ghFetch(path, opts = {}) {
-        const res = await fetch(`https://api.github.com/repos/${path}`, {
-            ...opts,
-            headers: {
-                'Authorization': `Bearer ${cfg().pat}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json',
-                ...(opts.headers || {}),
-            }
-        });
+        const res = serverGh
+            ? await fetch('/api/github', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path, method: opts.method || 'GET', body: opts.body || null }),
+              })
+            : await fetch(`https://api.github.com/repos/${path}`, {
+                ...opts,
+                headers: {
+                    'Authorization': `Bearer ${cfg().pat}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json',
+                    ...(opts.headers || {}),
+                }
+              });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || `HTTP ${res.status}`); }
         return res.json();
     }
@@ -525,7 +535,7 @@
         renderRedirects(el('search').value);
     }
 
-    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;'); }
     function shortHost(url) {
         try {
             const u = new URL(url);
@@ -603,7 +613,7 @@
         const slug = el('ep-slug').value.trim().replace(/^\//, '');
         const dest = el('ep-dest').value.trim();
         const group = el('ep-group').value;
-        if (!slug || !dest) return;
+        if (!slug || !dest || !/^https?:\/\//i.test(dest)) return;
         redirects[idx] = { ...redirects[idx], slug, destination: dest, group };
         editingPurl = null;
         updatePurlSaveBar();
@@ -620,7 +630,7 @@
         const slug = el('na-slug').value.trim().replace(/^\//, '');
         const dest = el('na-dest').value.trim();
         const group = el('na-group').value;
-        if (!slug || !dest) return;
+        if (!slug || !dest || !/^https?:\/\//i.test(dest)) return;
         redirects.push({ slug, destination: dest, group });
         el('na-slug').value = ''; el('na-dest').value = '';
         updatePurlSaveBar();
@@ -750,7 +760,7 @@ header{margin-bottom:52px;animation:rise .9s cubic-bezier(.16,1,.3,1) both}
 <div class="redirects-section"><div id="redirects-list"><p class="empty" style="color:var(--muted)">carregando…</p></div></div>
 <script>
 function toggleTheme(){const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;localStorage.setItem('theme',t)}
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;').replace(/"/g,'&quot;')}
 function shortHost(url){try{const u=new URL(url);const h=u.hostname.replace(/^www\\./,'');const p=u.pathname!=='/'?u.pathname.slice(0,14)+(u.pathname.length>15?'…':''):'';return h+p}catch{return url.slice(0,24)+'…'}}
 const GROUP_LABELS={contact:'contato',events:'eventos',video:'vídeo',tools:'ferramentas'};
 const ORDER=['contact','events','video','tools'];
@@ -958,7 +968,7 @@ function toggleTheme(){const t=document.documentElement.dataset.theme==='dark'?'
 const slug=location.pathname.replace(/^\\/+|\\/+$/g,'');
 fetch('/pastes.json').then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(data=>{const paste=(data.pastes||[]).find(p=>p.slug===slug);if(!paste){document.getElementById('paste-slug').textContent=slug||'?';document.getElementById('paste-content').innerHTML='<p class="not-found">Paste not found.</p>';return}document.title=paste.slug+' — paste.lucafchala.com';if(paste.lang)document.documentElement.lang=paste.lang==='pt'?'pt-BR':paste.lang;document.getElementById('paste-slug').textContent=paste.slug;document.getElementById('paste-rule').textContent=paste.subtitle||'PASTE';paste.type==='pgp'?renderPgp(paste):renderText(paste)}).catch(()=>{document.getElementById('paste-slug').textContent=slug||'?';document.getElementById('paste-content').innerHTML='<p class="not-found" style="color:var(--muted)">Erro ao carregar paste.</p>'});
 function renderText(p){const raw=p.content||'';const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');const linked=esc(raw).replace(/(https?:\\/\\/[^\\s<&]+)/g,url=>{try{if(!/^https?:$/.test(new URL(url).protocol))return url}catch{return url}return \`<a href="\${url}" target="_blank" rel="noopener noreferrer" class="paste-link">\${url}</a>\`});document.getElementById('paste-content').innerHTML=\`<pre class="paste-pre">\${linked}</pre>\`}
-function renderPgp(p){const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');document.getElementById('paste-content').innerHTML=\`<div class="meta"><div class="meta-row"><span class="meta-label">fingerprint</span><span class="meta-val">\${esc(p.fingerprint||'')}</span></div><div class="meta-row"><span class="meta-label">uid</span><span class="meta-val">Luca F. Chala &lt;luca@lucafchala.com&gt;</span></div></div><pre id="key-block" class="paste-pre" style="margin-top:20px">\${esc(p.content||'')}</pre><button class="copy-btn" id="copy-btn" onclick="copyKey()">copy key</button>\`}
+function renderPgp(p){const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');document.getElementById('paste-content').innerHTML=\`<div class="meta"><div class="meta-row"><span class="meta-label">fingerprint</span><span class="meta-val">\${esc(p.fingerprint||'')}</span></div><div class="meta-row"><span class="meta-label">uid</span><span class="meta-val">Luca F. Chala &lt;luca@lucafchala.com&gt;</span></div></div><pre id="key-block" class="paste-pre" style="margin-top:20px">\${esc(p.content||'')}</pre><button class="copy-btn" id="copy-btn" onclick="copyKey()">copy key</button>\`}
 function copyKey(){const text=document.getElementById('key-block').textContent;const btn=document.getElementById('copy-btn');navigator.clipboard.writeText(text).then(()=>{btn.textContent='copied!';btn.classList.add('ok');setTimeout(()=>{btn.textContent='copy key';btn.classList.remove('ok')},2000)}).catch(()=>{})}
 function toggleTheme(){const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;localStorage.setItem('theme',next)}
 \x3C/script>
@@ -1185,6 +1195,19 @@ function toggleTheme(){const next=document.documentElement.dataset.theme==='dark
             const loading = el('pastes-loading');
             if (loading) loading.textContent = s().pastes_offline;
         });
+
+    /* Probe the server-side GitHub proxy; if configured, no local PAT is needed */
+    fetch('/api/github')
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(d => {
+            if (!d.configured) return;
+            serverGh = true;
+            updateGhBtn();
+            renderRedirects(el('search').value);
+            renderPastes();
+            updatePurlSaveBar();
+        })
+        .catch(() => {});
 
     /* Fetch Upptime summary to color hub dots by real uptime status */
     fetch('https://raw.githubusercontent.com/lucafchala/upptime/HEAD/history/summary.json')
