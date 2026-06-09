@@ -22,7 +22,7 @@ export async function onRequest({ request, env, next }) {
 }
 
 async function isAuthed(request, env) {
-  if (!env.DASH_PASSWORD) return true; // graceful if secret not configured
+  if (!env.DASH_PASSWORD) return false; // fail closed — a missing secret is a deploy error, not a bypass
   const cookies = request.headers.get('Cookie') || '';
   const match = cookies.match(/dash_session=([A-Za-z0-9+/=._-]+)/);
   if (!match) return false;
