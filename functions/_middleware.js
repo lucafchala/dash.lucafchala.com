@@ -79,7 +79,7 @@ async function handleLogin(request, env) {
 }
 
 async function verifyTurnstile(token, secret) {
-  if (!secret) return true; // graceful degradation
+  if (!secret) return false; // fail closed — a missing secret is a deploy error, not a bypass
   if (!token) return false;
   try {
     const res = await fetch(TS_VERIFY_URL, {
