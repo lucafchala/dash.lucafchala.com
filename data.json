@@ -179,11 +179,6 @@
       "slug": "portfolio",
       "destination": "https://paste.lucafchala.com/cloudspot_deprecation",
       "group": "tools"
-    },
-    {
-      "slug": "teste",
-      "destination": "https://theannoyingsite.com",
-      "group": "tools"
     }
   ]
 }
