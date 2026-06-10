@@ -1,5 +1,5 @@
-const CACHE = 'dash-v3';
-const PRECACHE = ['/', '/index.html', '/data.json', '/manifest.json', '/icon.svg'];
+const CACHE = 'dash-v4';
+const PRECACHE = ['/', '/index.html', '/manifest.json', '/icon.svg'];
 
 self.addEventListener('install', e => {
     e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)));
@@ -18,6 +18,10 @@ self.addEventListener('activate', e => {
 /* Stale-while-revalidate */
 self.addEventListener('fetch', e => {
     if (e.request.method !== 'GET') return;
+    /* data.json is public and must always be fresh; bypassing SW avoids
+       stale HTML (auth redirect) being cached in place of JSON after
+       a session expiry and corrupting future loads. */
+    if (new URL(e.request.url).pathname === '/data.json') return;
     e.respondWith(
         caches.open(CACHE).then(cache =>
             cache.match(e.request).then(cached => {
