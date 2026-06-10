@@ -9,10 +9,18 @@ const RL_WINDOW = 15 * 60 * 1000; // 15 min
 const _rl = new Map();
 const RL_PREFIX = 'rl:';
 
+/* Static assets that must be publicly accessible regardless of auth state.
+   data.json is read by url.lucafchala.com as a fallback and by the page
+   itself; blocking it on session expiry would corrupt the SW cache. */
+const PUBLIC_PATHS = new Set([
+  '/data.json', '/manifest.json', '/icon.svg', '/sw.js', '/favicon.svg',
+]);
+
 export async function onRequest({ request, env, next }) {
   const url = new URL(request.url);
 
   if (url.pathname === '/api/healthz') return next();
+  if (PUBLIC_PATHS.has(url.pathname)) return next();
 
   if (url.pathname === '/login') {
     if (request.method === 'GET') return loginPage();
