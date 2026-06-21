@@ -1,0 +1,5 @@
+# robots.txt — dash.lucafchala.com
+# Open access: a personal control panel with a public leaderboard. All crawlers and AI agents are welcome.
+
+User-agent: *
+Allow: /
