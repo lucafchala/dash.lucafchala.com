@@ -184,6 +184,21 @@
       "slug": "teste",
       "destination": "https://drive.google.com",
       "group": "tools"
+    },
+    {
+      "slug": "github",
+      "destination": "https://github.com/lucafchala",
+      "group": "contact"
+    },
+    {
+      "slug": "linkedin",
+      "destination": "https://www.linkedin.com/in/luca-f-chala-9b9143282/",
+      "group": "contact"
+    },
+    {
+      "slug": "spotify",
+      "destination": "https://open.spotify.com/user/31slhygw6llfhswcz5jsldwzpleq?si=kIXN8taKSSO6OtWBpDoipw&utm_source=copy-link&sci=spotify%3Acard-config%3A0j2mwYX0vtL1heZPYG2R9R",
+      "group": "contact"
     }
   ]
 }
