@@ -199,6 +199,11 @@
       "slug": "spotify",
       "destination": "https://open.spotify.com/user/31slhygw6llfhswcz5jsldwzpleq?si=kIXN8taKSSO6OtWBpDoipw&utm_source=copy-link&sci=spotify%3Acard-config%3A0j2mwYX0vtL1heZPYG2R9R",
       "group": "contact"
+    },
+    {
+      "slug": "schor",
+      "destination": "https://itch.io",
+      "group": "tools"
     }
   ]
 }
