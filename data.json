@@ -204,6 +204,11 @@
       "slug": "schor",
       "destination": "https://itch.io",
       "group": "tools"
+    },
+    {
+      "slug": "fern",
+      "destination": "https://youtu.be/V6d8Yy7Ji68?is=eeboFalECfKV8Fal",
+      "group": "tools"
     }
   ]
 }
