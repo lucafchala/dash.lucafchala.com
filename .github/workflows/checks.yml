@@ -3,6 +3,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   checks:
     runs-on: ubuntu-latest
@@ -26,8 +29,9 @@ jobs:
       - name: Security headers file present
         run: test -f _headers
 
-      - name: JS module syntax check (functions)
+      - name: JS module syntax check (functions, sw)
         run: |
+          node --check sw.js
           node -e '
             const files = process.argv.slice(1);
             (async () => {
@@ -40,3 +44,60 @@ jobs:
               }
             })();
           ' $(find functions -name "*.js")
+
+      - name: Inline app script parses and is safe to inline
+        run: |
+          python3 - <<'PY'
+          import re, subprocess, sys
+          html = open('index.html', encoding='utf-8').read()
+          bad = []
+          for i, m in enumerate(re.finditer(r'<script\b([^>]*)>(.*?)</script>', html, re.S)):
+              if 'src=' in m.group(1) or not m.group(2).strip(): continue
+              body = m.group(2)
+              # '<!--' inside a script can put the HTML parser in "escaped" mode, where the real </script> no longer closes it.
+              if '<!--' in body: bad.append(f'inline script {i}: contains "<!--" (write "<\\!--" in templates)')
+              open(f'/tmp/inline-{i}.js', 'w', encoding='utf-8').write(body)
+              r = subprocess.run(['node', '--check', f'/tmp/inline-{i}.js'], capture_output=True, text=True)
+              if r.returncode: bad.append(f'inline script {i}: {r.stderr.strip()}')
+          bad += [f'inline handler {h}=' for h in re.findall(r'\s(on[a-z]+)=', html)]
+          if bad: print('\n'.join(bad)); sys.exit(1)
+          print('Inline scripts parse; no handlers, no "<!--".')
+          PY
+
+      - name: CSP hashes cover every inline script
+        run: |
+          python3 - <<'PY'
+          import re, hashlib, base64, sys
+          h = lambda x: "'sha256-" + base64.b64encode(hashlib.sha256(x.encode()).digest()).decode() + "'"
+          allowed = set(re.search(r"script-src ([^;]*)", open('_headers', encoding='utf-8').read()).group(1).split())
+          html = open('index.html', encoding='utf-8').read()
+          missing = [h(m.group(2)) for m in re.finditer(r'<script\b([^>]*)>(.*?)</script>', html, re.S) if 'src=' not in m.group(1) and m.group(2).strip() and h(m.group(2)) not in allowed]
+          if missing: print('Inline scripts not allowed by the CSP (regenerate the hashes — see README "Segurança"):', *missing, sep='\n  '); sys.exit(1)
+          print('CSP hashes up to date.')
+          PY
+
+      - name: data.json is valid PURL data
+        run: |
+          python3 - <<'PY'
+          import json, re, sys
+          from urllib.parse import urlparse
+          RESERVED = {'index.html', '404', '404.html', '404.js', 'url.js', 'robots.txt', 'sitemap.xml', '.well-known', 'data.json', 'manifest.json', 'icon.svg', 'favicon.svg', 'favicon.ico', 'fonts', 'status', 'transferring', 'transferring.html', 'llms.txt', 'og.png', 'og.svg', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', '_redirects', '_headers', 'cdn-cgi', 'style.css', 'app.js', 'theme.js', 'todo.md'}
+          items = json.load(open('data.json', encoding='utf-8'))['redirects']
+          errs, seen = [], set()
+          for i, r in enumerate(items):
+              s = r.get('slug', '')
+              if not re.fullmatch(r'[^\W_A-Z][\w.\-]*', s) or s != s.lower(): errs.append(f'#{i} invalid slug {s!r}')
+              if s in RESERVED: errs.append(f'#{i} reserved slug {s!r}')
+              if s in seen: errs.append(f'#{i} duplicate slug {s!r}')
+              seen.add(s)
+              u = urlparse(r.get('destination', ''))
+              if u.scheme not in ('http', 'https') or '.' not in (u.hostname or '') or re.search(r'\s', r.get('destination', '')): errs.append(f'#{i} bad destination for {s!r}')
+              if r.get('group') not in ('contact', 'events', 'video', 'tools'): errs.append(f'#{i} unknown group for {s!r}')
+              if 'status' in r and r['status'] != 301: errs.append(f'#{i} status must be 301 or absent (302) for {s!r}')
+              if set(r) - {'slug', 'destination', 'group', 'status'}: errs.append(f'#{i} unexpected keys {set(r) - {"slug", "destination", "group", "status"}}')
+          if errs: print('\n'.join(errs)); sys.exit(1)
+          print(f'{len(items)} PURLs valid.')
+          PY
+
+      - name: Function tests (proxy path validation, middleware)
+        run: node --test tests/*.test.mjs

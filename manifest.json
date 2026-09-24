@@ -6,7 +6,6 @@
   "display": "standalone",
   "background_color": "#0d0c0a",
   "theme_color": "#0d0c0a",
-  "orientation": "portrait-primary",
   "lang": "pt-BR",
   "icons": [
     {
@@ -15,5 +14,7 @@
       "type": "image/svg+xml",
       "purpose": "any"
     }
-  ]
+  ],
+  "id": "/",
+  "scope": "/"
 }

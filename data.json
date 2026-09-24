@@ -22,27 +22,27 @@
     },
     {
       "slug": "piauifut2024",
-      "destination": "https://drive.google.com/drive/folders/1OFR7xmT1LkRu5UDy6cX_fr9iP7qmodAP?usp=drive_link",
+      "destination": "https://fotos.lucafchala.com/piauifut2024",
       "group": "events"
     },
     {
       "slug": "piauifut2025",
-      "destination": "https://drive.google.com/drive/folders/1-ElIAZT2Wnyv23HFSqZUWK6cKqwqwjN2",
+      "destination": "https://fotos.lucafchala.com/piauifut2025",
       "group": "events"
     },
     {
       "slug": "piauifest2025",
-      "destination": "https://drive.google.com/drive/folders/1CDTfc56wY2ErnTi4DqFbloJ1kR18kxGA",
+      "destination": "https://fotos.lucafchala.com/piauifest2025",
       "group": "events"
     },
     {
       "slug": "mostra2025",
-      "destination": "https://drive.google.com/drive/folders/1FEpVkyz4kTEKUOPanjPcgkHUWWj9rwfu",
+      "destination": "https://fotos.lucafchala.com/mostracultural2025",
       "group": "events"
     },
     {
       "slug": "isa_16anos",
-      "destination": "https://drive.google.com/drive/folders/12le75s8WISbtBsk0nMJVriqi-H74efmz",
+      "destination": "https://fotos.lucafchala.com/isak-16",
       "group": "events"
     },
     {
@@ -57,17 +57,17 @@
     },
     {
       "slug": "paraty",
-      "destination": "https://paste.lucafchala.com/cloudspot_deprecation",
+      "destination": "https://fotos.lucafchala.com/paraty-24-25",
       "group": "events"
     },
     {
       "slug": "natal-2024",
-      "destination": "https://paste.lucafchala.com/cloudspot_deprecation",
+      "destination": "https://fotos.lucafchala.com/natal2024",
       "group": "events"
     },
     {
       "slug": "viagem-familia_2024",
-      "destination": "https://paste.lucafchala.com/cloudspot_deprecation",
+      "destination": "https://fotos.lucafchala.com/famiglia2024",
       "group": "events"
     },
     {
@@ -87,12 +87,12 @@
     },
     {
       "slug": "ecp_carros",
-      "destination": "https://paste.lucafchala.com/cloudspot_deprecation",
+      "destination": "https://fotos.lucafchala.com/ecp-carros-2024",
       "group": "events"
     },
     {
       "slug": "ecp_125_anos",
-      "destination": "https://paste.lucafchala.com/cloudspot_deprecation",
+      "destination": "https://fotos.lucafchala.com/ecp125",
       "group": "events"
     },
     {
@@ -172,17 +172,12 @@
     },
     {
       "slug": "pgp",
-      "destination": "https://paste.lucafchala.com/pgp",
+      "destination": "https://keys.lucafchala.com",
       "group": "tools"
     },
     {
       "slug": "portfolio",
-      "destination": "https://paste.lucafchala.com/cloudspot_deprecation",
-      "group": "tools"
-    },
-    {
-      "slug": "teste",
-      "destination": "https://drive.google.com",
+      "destination": "https://fotos.lucafchala.com",
       "group": "tools"
     },
     {
@@ -199,11 +194,6 @@
       "slug": "spotify",
       "destination": "https://open.spotify.com/user/31slhygw6llfhswcz5jsldwzpleq?si=kIXN8taKSSO6OtWBpDoipw&utm_source=copy-link&sci=spotify%3Acard-config%3A0j2mwYX0vtL1heZPYG2R9R",
       "group": "contact"
-    },
-    {
-      "slug": "schor",
-      "destination": "https://itch.io",
-      "group": "tools"
     },
     {
       "slug": "fern",
