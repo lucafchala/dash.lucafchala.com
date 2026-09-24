@@ -1,0 +1,54 @@
+name: links
+# Weekly check of every PURL destination (dash#28). Drive links die silently
+# when sharing changes; this turns that into one issue that opens, updates and
+# closes itself. The check runs here on the runner, never in the dash.
+on:
+  schedule:
+    - cron: '23 10 * * 1'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [data.json, scripts/check-links.py, .github/workflows/links.yml]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: links
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check destinations
+        id: check
+        run: |
+          set +e
+          python3 scripts/check-links.py data.json link-report.md
+          echo "broken=$([ $? -eq 0 ] && echo no || echo yes)" >> "$GITHUB_OUTPUT"
+
+      - name: Open, update or close the "Links quebrados" issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BROKEN: ${{ steps.check.outputs.broken }}
+        run: |
+          title="Links quebrados"
+          gh label create links-quebrados --color d93f0b --description "Aberta pelo workflow links.yml" 2>/dev/null || true
+          num=$(gh issue list --state open --label links-quebrados --json number --jq '.[0].number')
+          if [ "$BROKEN" = "yes" ]; then
+            if [ -n "$num" ]; then
+              gh issue edit "$num" --body-file link-report.md
+              echo "Updated #$num"
+            else
+              gh issue create --title "$title" --label links-quebrados --label owner --body-file link-report.md
+            fi
+          elif [ -n "$num" ]; then
+            gh issue comment "$num" --body "Verificação de $(date -u +%F): nenhum destino quebrado. Fechando."
+            gh issue close "$num" --reason completed
+          else
+            echo "All good, no issue open."
+          fi

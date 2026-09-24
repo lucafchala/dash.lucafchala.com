@@ -16,6 +16,16 @@ A few Pages Functions provide the backend:
 | `functions/api/github.js` | GitHub Contents API proxy using the `GH_PAT` secret. `GET` returns `{configured, repos}`. `POST {path, method, body}` accepts only `GET/PUT/DELETE` on `<owner>/<repo>/contents/<segments>` for allowlisted repos (default 4, override with `GH_REPOS`). It rejects `%`, `\`, `?`, `#`, whitespace, and `.`/`..` segments — fetch() would decode `%2e%2e` into a path traversal |
 | `functions/api/healthz.js` | Public config probe (booleans only) used by status |
 
+Weekly link check: `.github/workflows/links.yml` + `scripts/check-links.py`.
+- Broken = 404/410/5xx, network error, or a Drive link landing on the Google login.
+- 401/403/429/999 are listed as "unverifiable", never broken.
+- It opens, updates and closes one `links-quebrados` issue.
+
+Paste types:
+- `text`;
+- `pgp`;
+- `links` — rendered by `renderLinks()` in the paste repo's `paste.js`; the editor preview `previewLinks()` here must follow the same rule.
+
 Tests: `node --test tests/*.test.mjs` (proxy traversal cases, middleware 401/redirect/login/open-redirect/logout/fail-closed).
 
 ---
