@@ -1,219 +1,160 @@
 # CLAUDE.md — dash.lucafchala.com
 
-This file orients AI assistants working on this codebase. Read it before making any changes.
+Orientation for AI assistants. Read it before changing anything. User-facing docs (Portuguese) are in `README.md`; the ecosystem design system is in the lucafchala.com README.
 
 ---
 
 ## What this is
 
-**dash.lucafchala.com** is a personal control panel — a single-page app for managing PURLs (permanent redirects), pastes, and hub links across the lucafchala.com ecosystem. There is no backend, no framework, no build step. Everything lives in `index.html` as inline HTML + CSS + JS. Persistence is handled entirely via the **GitHub Contents API** using a PAT stored in `localStorage`.
+A private control panel (password + Turnstile) that manages **PURLs** (short links), **pastes** and quick links for the lucafchala.com ecosystem. The app is a single `index.html` with inline HTML + CSS + JS, and no framework or build step. GitHub is the database: the app reads and writes files in four repos through the Contents API, and every commit becomes a Cloudflare Pages deploy.
+
+A few Pages Functions provide the backend:
+
+| File | Role |
+|---|---|
+| `functions/_middleware.js` | Auth gate for every path except `PUBLIC_PATHS`/`PUBLIC_PREFIXES` and `/api/healthz`. Login = `DASH_PASSWORD` (constant-time compare) + Turnstile + rate limit (KV if `DASH_KV`, else in-memory). Session cookie `dash_session` = `exp.HMAC(exp)` keyed by the password, 24 h, HttpOnly/Secure/SameSite=Strict. `/logout` clears it. Unauthenticated `/api/*` gets **401 JSON** (not a 302). The login page sets its own security headers (`_headers` doesn't apply to Function responses) and has no inline script. `next=` is validated to be same-origin |
+| `functions/api/github.js` | GitHub Contents API proxy using the `GH_PAT` secret. `GET` returns `{configured, repos}`. `POST {path, method, body}` accepts only `GET/PUT/DELETE` on `<owner>/<repo>/contents/<segments>` for allowlisted repos (default 4, override with `GH_REPOS`). It rejects `%`, `\`, `?`, `#`, whitespace, and `.`/`..` segments — fetch() would decode `%2e%2e` into a path traversal |
+| `functions/api/healthz.js` | Public config probe (booleans only) used by status |
+
+Tests: `node --test tests/*.test.mjs` (proxy traversal cases, middleware 401/redirect/login/open-redirect/logout/fail-closed).
 
 ---
 
 ## Repository structure
 
 ```
-dash.lucafchala.com/
-├── index.html      # the entire application — HTML, CSS, and JS all inline
-├── data.json       # source of truth for all PURLs (redirects)
-├── manifest.json   # PWA manifest
-├── sw.js           # service worker (stale-while-revalidate cache)
-├── icon.svg        # app icon
-├── README.md       # user-facing documentation (Portuguese)
-└── CLAUDE.md       # this file
+index.html            # the entire app — HTML, CSS, JS inline (two scripts, hash-pinned in _headers)
+data.json             # source of truth for PURLs
+functions/            # _middleware.js, api/github.js, api/healthz.js
+tests/                # node:test suites for the functions
+sw.js                 # service worker
+manifest.json, icon.svg, robots.txt, _headers, fonts/
+README.md             # user docs (PT)
+CLAUDE.md             # this file
 ```
 
-**All application code is in `index.html`.** There are no separate `.js` or `.css` files. When editing, open only `index.html`.
+**All application code is in `index.html`.** Don't create separate JS/CSS files for the app.
 
 ---
 
-## The ecosystem — related repos
+## Ecosystem — what the dash writes
 
-The dash manages files across four GitHub repositories:
-
-| Repo | Domain | What the dash writes there |
-|---|---|---|
-| `lucafchala/lucafchala.com` | lucafchala.com | `_redirects`, `404.html` |
-| `lucafchala/dash.lucafchala.com` | dash.lucafchala.com | `data.json` |
-| `lucafchala/paste.lucafchala.com` | paste.lucafchala.com | `pastes.json`, `{slug}/index.html` |
-| `lucafchala/url.lucafchala.com` | url.lucafchala.com | `_redirects`, `data.json`, `index.html`, `404.html` |
-
-The url repo is **optional** — configured in settings. All others are required.
+| Repo | Files |
+|---|---|
+| `lucafchala/dash.lucafchala.com` | `data.json` |
+| `lucafchala/lucafchala.com` | `_redirects`, `404.js`, `404.html` |
+| `lucafchala/url.lucafchala.com` (optional; empty setting disables) | `_redirects`, `data.json`, `url.js`, `index.html`, `404.js`, `404.html` |
+| `lucafchala/paste.lucafchala.com` | `pastes.json`, `{slug}/index.html` (shells), `sitemap.xml` |
 
 ---
 
-## How PURLs work
+## Data model
 
-### Data model
-
-PURLs live in `data.json`:
+`data.json`:
 
 ```json
-{
-  "redirects": [
-    { "slug": "instagram", "destination": "https://...", "group": "contact" }
-  ]
-}
+{ "redirects": [ { "slug": "instagram", "destination": "https://…", "group": "contact" },
+                 { "slug": "github", "destination": "https://…", "group": "contact", "status": 301 } ] }
 ```
 
-Groups: `contact`, `events`, `video`, `tools`. Rendered as collapsible sections. `events` and `video` start collapsed on url.lucafchala.com.
+- Groups: `contact`, `events`, `video`, `tools` (`GROUPS`).
+- `status` is only present when 301. Absent means **302** (the default, because browsers cache 301 forever).
+- `normalizePurl()` enforces this shape and key order. `genDataJson()` must stay byte-stable.
 
-### Save flow (`savePurlsToGitHub`)
-
-On save, the dash:
-1. Generates `_redirects` (Cloudflare Pages format: `/<slug>  <dest>  301`)
-2. Generates `data.json`
-3. Fetches current SHAs for all files to be written
-4. Writes files to repos — **sequential within the same repo, parallel across repos**
-
-> **Critical**: GitHub API returns 409 if two commits land on the same branch simultaneously. Never use `Promise.all` for writes to the same repo. Always `await` them one after another.
-
-Write order:
-```
-repoHome:  _redirects → 404.html  (sequential)
-repoDash:  data.json              (parallel with repoHome, different repo)
-repoUrl:   _redirects → data.json → index.html → 404.html  (all sequential)
-```
-
-### Generated files
-
-The dash generates three files inline and pushes them to other repos:
-
-- **`genRedirectsFile(items)`** — Cloudflare Pages `_redirects` format, grouped with comments
-- **`genUrlIndex()`** — full `index.html` for url.lucafchala.com (read-only PURL listing + hub grid)
-- **`gen404Html()`** — `404.html` for both lucafchala.com and url.lucafchala.com (same file, domain-aware via `location.hostname` at runtime)
+`pastes.json`: `{ "pastes": [ { slug, subtitle, description, description_en, lang, [type: "pgp", fingerprint], content } ] }`.
 
 ---
 
-## How Pastes work
+## Save flow (read this before touching saving)
 
-Pastes are stored in `pastes.json` in the paste repo. Each paste has:
-- `slug`, `title`, `subtitle`, `type` (`text` or `pgp`), `lang`, `content`
-
-On save:
-1. `pastes.json` is updated in the paste repo
-2. For **new** pastes, a `{slug}/index.html` is created using `PASTE_TEMPLATE` — a static HTML page that fetches `pastes.json` at runtime to render content
-
-The paste template is a self-contained HTML file inlined as a template string in `index.html`.
-
----
-
-## How the 404 page works
-
-`gen404Html()` generates a single `404.html` that handles both `lucafchala.com` and `url.lucafchala.com`:
-
-- **Toast warning**: shown only when arriving via a real bad slug. Logic: `slug && slug !== '404' && slug !== '404.html'` (prevents toast on direct `/404` visits)
-- **"Ver todos os links" button**: points to `https://url.lucafchala.com` on lucafchala.com, or `/` on url.lucafchala.com — detected at runtime via `location.hostname === 'url.lucafchala.com'`
-- **Contact**: `suporte@lucafchala.com`
-- **Language**: Brazilian Portuguese
+- **Load:** when authed, `loadPurls()` / `loadPastes()` read `data.json` / `pastes.json` **from GitHub** and keep `sha` + `content` in `purl` / `paste`. Unauthenticated users get the public copies, read-only. If loading fails, `loaded` is false and **saving is refused**; the old code would overwrite the file with an empty list.
+- **Snapshot:** `savePurls()` / `savePastes()` snapshot the items at the start; the save bars are disabled while saving.
+- **Gate write:** first the source-of-truth file, with `baseSha` from load (`applyWrite` with `baseSha` in the write). A `409` → `resolveConflict()` shows the remote diff and offers reload / overwrite. Nothing else is written until then.
+- **Derived writes:** `derivedPurlWrites()` / `pasteWrites()` go through `runWrites()`:
+  - grouped by repo — **sequential within a repo, parallel across repos**. GitHub rejects concurrent commits to one branch with 409. Never `Promise.all` writes to the same repo;
+  - each write fetches the current file and **skips it if the content is identical** (no empty commits);
+  - `getFile` returns `null` only on 404; other errors propagate;
+  - scripts are written before the HTML that loads them.
+- **Page guard:** paste writes carry `guard: isManagedPastePage`. Pages without the `dash:paste-shell` marker (or the legacy template's `fetch('/pastes.json')`) are **never overwritten or deleted**. Hand-built pages (`nirvana-…`, `vela_f5-2024`, `cloudspot_deprecation`) stay untouched.
+- **Report:** `report()` shows per-file results. Failures get a retry that re-runs only the failed writes.
+- **Sync / regenerate:** "sincronizar" / "regenerar páginas" re-run the derived writes from saved data. Use them after changing a generator.
 
 ---
 
-## How url.lucafchala.com works
+## Generators (`index.html`, "Generators" section)
 
-The url index (`genUrlIndex()`) is a read-only version of the dash's PURL view. Key details:
+`genRedirectsFile`, `genDataJson`, `gen404Html` + `gen404Js`, `genUrlIndex` + `genUrlJs`, `genPasteShell`, `genPastesJson`, `genPasteSitemap`.
 
-- Fetches `/data.json` at runtime. Falls back to `https://dash.lucafchala.com/data.json` if local fetch fails (handles fresh/empty repos)
-- Reuses the same CSS design tokens and components as the dash (copy-pasted as minified inline CSS)
-- Hub grid at the top (PÁGINAS section) with links to all ecosystem services
-- No editing — buttons are copy/open only
+- **Deterministic output** — same data, same bytes. No timestamps or random values.
+- **No inline scripts or `on*=` in generated HTML.** Target sites run `script-src 'self'`; behaviour lives in the generated `404.js` / `url.js` and in the paste repo's `paste.js`.
+- **Every generated file starts with a `generated by dash.lucafchala.com (genX)` marker.** CI in url/paste checks for it.
+- **Shared prefs code:** `GEN_PREFS_JS` is the theme/lang bootstrap shared by generated scripts (the `lf_theme`/`lf_lang` cookies on `.lucafchala.com`). `GEN_FONTS` / `GEN_BASE` / `GEN_CONTROLS` are the shared CSS and controls.
+- **Escapes inside the inline script:**
+  - write `<\/script>` for closing tags and `<\!--` for HTML comments;
+  - **never** put a literal `</script` or `<!--` in the inline script. `<!--` can switch the HTML parser into "escaped" script mode, where the real `</script>` no longer closes the block. CI enforces this;
+  - generated JS uses `String.raw` so its regex backslashes survive.
+- **Proving output:** the committed files in the target repos must equal what the generators produce. After changing a generator, run the dash (or its generators in a browser) and commit the output, or press sync.
 
 ---
 
-## GitHub API helpers (in index.html)
+## CSP (important)
+
+`_headers` has `script-src 'self' 'sha256-…' 'sha256-…'`: one hash for the tiny theme bootstrap in `<head>`, one for the app script. **Any edit to either inline script changes its hash** — regenerate (snippet in README → "Segurança") or the app is blocked. CI's "CSP hashes cover every inline script" step fails on drift.
+
+- **Events:** there are no `onclick=` attributes. All events go through `data-action` + one delegated `click` listener, plus `submit`/`input`/`keydown` listeners.
+- **`connect-src`:** `'self'`, `https://api.github.com` (legacy PAT mode), `https://paste.lucafchala.com` (public pastes), `https://status.lucafchala.com` (hub status dots).
+
+---
+
+## Service worker
+
+`sw.js`:
+- **Never** caches a response with `redirected: true` or a non-2xx/opaque one. A redirected login page cached under `/` caused a permanent `net::ERR_FAILED`.
+- Navigations are network-first (offline falls back to the last good `/`).
+- `/api/*`, `/data.json`, `/login`, `/logout` and every cross-origin request bypass it.
+- Bump `CACHE` when the precache list changes.
+
+---
+
+## GitHub helpers
 
 ```js
-getFile(repo, path)           // GET /repos/{repo}/contents/{path} → { content, sha }
-putFile(repo, path, content,  // PUT — creates or updates a file
-        sha, message)         // sha = undefined to create, existing sha to update
-cfg()                         // returns { token, repoHome, repoDash, repoPaste, repoUrl }
-isAuth()                      // true if PAT is set in localStorage
+ghFetch(path, { method, body })   // proxy (serverGh) or direct with gh_pat; throws GhError(message, status); 401 from the middleware → sessionExpired()
+getFile(repo, path)                // → { sha, content } | null (404 only)
+putFile(repo, path, content, sha, message)
+deleteFile(repo, path, sha, message)
+applyWrite(write, results) / runWrites(writes, results)
+cfg()                              // { pat, repoHome, repoDash, repoPaste, repoUrl }; repoUrl '' = disabled
+isAuth()                           // serverGh || !!pat
 ```
 
-All stored in `localStorage`:
-- `gh_token` — GitHub PAT (needs `repo` scope)
-- `gh_repo_home`, `gh_repo_dash`, `gh_repo_paste`, `gh_repo_url` — repo identifiers (`owner/name`)
-- `theme` — `dark` or `light`
-- `lang` — `pt` or `en`
+`localStorage`: `gh_repo_*`, legacy `gh_pat`, `theme`, `lang`. Prefs are written through `writePref()` (cookie + localStorage).
 
 ---
 
-## UI state
+## UI conventions
 
-### Internationalisation
-
-All UI strings are in the `STRINGS` object near the bottom of `index.html`:
-
-```js
-const STRINGS = {
-  pt: { h1: '...', groups: { contact: 'contato', ... }, ... },
-  en: { h1: '...', groups: { contact: 'contact', ... }, ... }
-};
-function s() { return STRINGS[lang]; }
-```
-
-### Rendering
-
-PURLs and pastes are rendered by `renderRedirects()` and `renderPastes()` — they re-build the DOM from the in-memory arrays (`redirects`, `pastes`). There is no virtual DOM or reactivity library.
-
-Dirty-checking is `JSON.stringify` comparison between the live array and a deep-cloned `savedRedirects` / `savedPastes` snapshot.
-
-### Save bar
-
-`.save-bar` is `position: sticky; bottom: 20px`. It becomes visible when there are unsaved changes **and** the user is authenticated. It hides on save or discard.
-
----
-
-## Design system
-
-See `README.md` → **Guia de Design** for the full reference. Summary:
-
-- **Fonts**: Cormorant Garamond (serif, titles) + JetBrains Mono (mono, everything else) via Google Fonts
-- **Palette**: warm dark (`#0d0c0a` bg, `#c08030` accent) with a light variant
-- **Tokens**: `--bg`, `--border`, `--text`, `--muted`, `--accent`, `--accent-dim`, `--ctrl-bg`
-- **Layout**: `max-width: 680px`, centered, `padding: 48px 32px 72px`
-- **Animation**: `rise` keyframe (`opacity 0 + translateY(18px)` → natural), staggered with delays
-- **Components**: `.rule` (section divider), `.hub` (service card), `.act-btn` (inline action), `.ctrl-btn` (top bar), `.save-bar`, `.modal-overlay`
-
----
-
-## PWA
-
-- `manifest.json` — app name, icons, theme color
-- `sw.js` — caches the app shell with stale-while-revalidate. On code changes, increment the cache version in `sw.js` if you need to bust the cache.
+- **i18n:** every string is in `STRINGS.pt` / `STRINGS.en` — no hardcoded UI text. Static elements use `data-i18n` / `data-i18n-attr`; `applyLang()` walks them.
+- **Dialogs:** native `<dialog>` — `openModal()`, the generic `openDialog({title, body, actions})`, `confirmDialog()`. The paste editor never closes on a backdrop click.
+- **Feedback:** `toast(msg, {error, action, onAction})` in an `aria-live` region; no `alert()` / `confirm()`.
+- **Validation:** `checkSlug()` (regex, `RESERVED_PURL` / `RESERVED_PASTE`, duplicates) and `checkDest()`, with errors shown inline via `showFieldError()`.
+- **Dirty state:** JSON comparison against the saved snapshot. `diffBySlug()` feeds the counters and the conflict dialog.
 
 ---
 
 ## Common tasks
 
-### Add a new PURL group
-
-1. Add the group key to the `ORDER` array in `genRedirectsFile()`
-2. Add the label to `STRINGS.pt.groups` and `STRINGS.en.groups`
-3. Add it to the `<select>` options in the add-form and edit-form HTML in `index.html`
-
-### Change what gets synced on save
-
-Edit `savePurlsToGitHub()`. Follow the sequential-within-same-repo rule.
-
-### Change the 404 page content
-
-Edit `gen404Html()`. The next PURL save will push the updated file to both `lucafchala.com` and `url.lucafchala.com`.
-
-### Change the url.lucafchala.com index
-
-Edit `genUrlIndex()`. The next PURL save will push it to the url repo.
-
-### Change hub links
-
-The hub grid in the url index is hardcoded in `genUrlIndex()`. Edit the `<a class="hub">` elements there.
+- **Add a PURL group:** extend `GROUPS`, `STRINGS.*.groups`, `URL_T.*.g_<group>`, and the CI list in `checks.yml` ("data.json is valid").
+- **Add a reserved path:** when a target site gains a top-level file, add it to `RESERVED_PURL` (and the CI list).
+- **Change the 404 / url index / paste shell:** edit the generator, reload the dash, press sync / regenerate (or regenerate the files and commit them in the target repos).
+- **Change what gets written on save:** `derivedPurlWrites()` / `pasteWrites()`. Keep the sequential-within-repo rule and the script-before-HTML order.
 
 ---
 
 ## Things to avoid
 
-- **Do not add frameworks or build steps.** Everything must work as a plain HTML file served statically.
-- **Do not use `Promise.all` for writes to the same GitHub repo/branch.** Each `putFile` creates a commit; parallel commits cause SHA 409 conflicts.
-- **Do not read `data.json` to get current PURLs at runtime.** On page load, the dash fetches `data.json` from GitHub and holds it in memory as `redirects`. Treat that array as the source of truth during a session.
-- **Do not create separate JS/CSS files.** Keep everything inline in `index.html`.
-- **Do not add comments that describe what code does.** Only comment when the WHY is non-obvious (e.g. the sequential-write constraint above).
+- Frameworks, build steps, separate app JS/CSS files.
+- `Promise.all` over writes to the same repo.
+- Saving when `loaded` is false, or reading PURLs from the deployed site while authed. Use the GitHub copy and its SHA.
+- Inline `on*=` handlers, `innerHTML` with unescaped data (use `esc()`), `alert()`/`confirm()`.
+- Comments that describe *what* code does. Comment only non-obvious *why* (like the sequential-write rule).

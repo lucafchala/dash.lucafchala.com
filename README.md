@@ -1,139 +1,198 @@
-> Parte do [ecossistema lucafchala.com](https://github.com/lucafchala/lucafchala.com#the-ecosystem). Esta é a peça que **escreve nos outros repositórios** (PURLs e pastes) via API do GitHub. Design system e convenções compartilhadas: [README do hub](https://github.com/lucafchala/lucafchala.com#design-system).
+# dash.lucafchala.com
+
+> Painel de controle pessoal do ecossistema [lucafchala.com](https://github.com/lucafchala/lucafchala.com#the-ecosystem). Gerencia os **links curtos (PURLs)** e os **pastes** e **escreve os arquivos gerados nos outros repositórios** pela API do GitHub. Design system e convenções: [README do hub](https://github.com/lucafchala/lucafchala.com#design-system).
+
+**No ar:** [dash.lucafchala.com](https://dash.lucafchala.com) (privado, com senha) · **Stack:** HTML/CSS/JS puro + Cloudflare Pages Functions · **Build:** nenhum
+
+---
 
 ## Visão geral
 
-O painel é uma **single-page app** em HTML/CSS/JS puro, sem frameworks ou build step. Toda a persistência é feita via **GitHub API** usando um Personal Access Token armazenado localmente no navegador. Não há backend — o GitHub serve como banco de dados.
+O painel é uma **single-page app** num único `index.html` (HTML, CSS e JS inline), sem framework e sem build. O GitHub é o banco de dados: o painel lê e grava arquivos nos repositórios pela Contents API, e cada commit vira um deploy no Cloudflare Pages.
+
+Três Pages Functions dão a ele um backend mínimo:
+
+| Rota | Arquivo | O que faz |
+|---|---|---|
+| todas | `functions/_middleware.js` | Login com senha + Cloudflare Turnstile, sessão em cookie `HttpOnly` assinado (24 h), limite de tentativas, `/logout`, 401 em JSON para `/api/*` quando a sessão expira |
+| `/api/github` | `functions/api/github.js` | Proxy da Contents API do GitHub com o token `GH_PAT` guardado no servidor — o token nunca chega ao navegador. Só aceita `GET`/`PUT`/`DELETE` em `repos/<repo permitido>/contents/…`, e recusa `%`, `\`, `..` e qualquer repo fora da lista |
+| `/api/healthz` | `functions/api/healthz.js` | Sonda pública para o status: diz só se os segredos estão configurados (booleans) |
 
 ---
 
 ## Funcionalidades
 
-### Serviços (Hubs)
+### Serviços, repositórios e links
 
-Acesso rápido aos serviços do ecossistema. Cada hub exibe o nome, descrição e um indicador de status (ativo/inativo):
+- **Serviços:** cards para cada subdomínio, com um ponto de status **ao vivo** lido de `status.lucafchala.com/api/status` (verde / amarelo / vermelho, com texto alternativo para leitores de tela).
+- **Repositórios:** atalhos para cada repositório do ecossistema no GitHub.
+- **Links úteis:** Cloudflare, GitHub, Status, tokens do GitHub.
 
-| Serviço | URL |
+### PURLs — links curtos
+
+Um PURL é `lucafchala.com/<slug> → destino`. Os mesmos links funcionam em `url.lucafchala.com/<slug>`.
+
+| Grupo | Uso |
 |---|---|
-| Fotos | fotos.lucafchala.com/dashboard |
-| lucafchala.com | lucafchala.com |
-| Now | now.lucafchala.com |
-| Paste | paste.lucafchala.com |
-| Weblog | weblog.lucafchala.com |
-| Rádio | radio.lucafchala.com |
-| Admin | omg.lucafchala.com |
+| `contact` | Contato (Instagram, Signal…) |
+| `events` | Galerias de eventos (fotos.lucafchala.com) |
+| `video` | Projetos de vídeo |
+| `tools` | Utilidades |
 
-### Repositórios
+- **Adicionar e editar** com validação na hora:
+  - slug em minúsculas, números, `.`, `_`, `-` (acentos permitidos);
+  - sem duplicados;
+  - sem nomes reservados que colidiriam com arquivos dos sites (`robots.txt`, `status`, `fonts`, `404`…);
+  - destino `http(s)` completo;
+  - o erro aparece ao lado do campo.
+- **302 ou 301 por link.** O padrão é **302**: navegadores guardam o 301 para sempre, então mudar o destino não chegaria a quem já clicou. Marque 301 só em links que nunca vão mudar.
+- **Reordenar dentro do grupo** (↑/↓ no modo de edição).
+- **Remover com desfazer:** a remoção mostra um aviso com "desfazer"; nada vai ao GitHub até salvar.
+- **QR code** de cada link (`https://lucafchala.com/<slug>`), com download em SVG ou PNG — gerado no próprio navegador.
+- **Copiar** o link curto e **abrir** o destino.
+- **Exportar / importar** a lista em JSON; a importação valida cada entrada e oferece *mesclar* ou *substituir tudo*.
+- **Sincronizar:** reescreve os arquivos gerados (`_redirects`, 404, índice do url) a partir dos dados salvos, útil depois de atualizar o próprio painel.
 
-Grid com links diretos para os repositórios GitHub do ecossistema, com indicadores de atividade recente.
+### Pastes
 
-### Links Úteis
+- Criar, editar e remover pastes. Campos: slug, subtítulo, descrição PT/EN, idioma do conteúdo, tipo (texto ou chave PGP), fingerprint (PGP) e conteúdo.
+- **Prévia** do conteúdo antes de salvar (com os links já clicáveis).
+- Remover um paste também apaga a página `{slug}/index.html` — mas só se for uma página gerada pelo painel. Páginas feitas à mão nunca são sobrescritas nem apagadas.
+- **Regenerar páginas:** reescreve todas as páginas geradas com o modelo atual.
 
-Atalhos rápidos para Cloudflare (Pages, DNS), GitHub e outras ferramentas de administração.
+### Interface
+
+- PT/EN e tema claro/escuro, **compartilhados com todos os sites `*.lucafchala.com`** (cookies `lf_lang` / `lf_theme`).
+- Busca única que filtra PURLs (slug, destino, grupo) e pastes (slug, descrição, conteúdo).
+- **Atalhos:** `/` busca · `n` novo link · `⌘S`/`Ctrl+S` salva · `Esc` cancela a edição ou limpa a busca.
+- **Diálogos nativos (`<dialog>`):** Esc fecha e o foco volta ao botão que abriu. Clicar fora do editor de paste **não** fecha (antes, arrastar a seleção para fora apagava o texto).
+- **Avisos** numa região `aria-live` em vez de `alert()`.
+- **Aviso antes de sair** da página com alterações não salvas.
+- **Funciona no celular** (360 px sem rolagem lateral), com foco visível e respeito a `prefers-reduced-motion`.
+- **PWA instalável.** O service worker usa rede primeiro para a página (sempre roda a versão mais nova do painel) e nunca guarda respostas de redirecionamento — o bug do `net::ERR_FAILED` depois de a sessão expirar.
 
 ---
 
-## PURLs — Redirecionamentos Permanentes
+## Como o salvamento funciona
 
-Os PURLs são redirecionamentos curtos do tipo `lucafchala.com/slug → destino`. São gerenciados pelo painel e sincronizados automaticamente com o GitHub ao salvar.
+### PURLs
 
-### Grupos
+1. **Carregar:** com o proxy configurado, `data.json` é lido **do GitHub** (não da versão publicada, que pode estar atrasada), e o SHA do arquivo é guardado.
+2. **Somente leitura se falhar:** se a leitura falhar, o painel fica somente leitura, com um aviso. Antes, salvar depois de uma falha de carga apagava todos os links.
+3. **Snapshot:** ao salvar, o painel tira um *snapshot* da lista. O que você editar durante o salvamento continua marcado como não salvo.
+4. **`data.json` primeiro, com o SHA da leitura:** se outra pessoa (ou outra aba) mudou o arquivo nesse meio tempo, o GitHub responde `409` e abre um **diálogo de conflito**. Ele mostra o que mudou no GitHub e oferece *recarregar* ou *sobrescrever com as minhas*. Nada mais é gravado até resolver.
+5. **Arquivos gerados:** depois, em paralelo entre repositórios e em sequência dentro de cada um:
 
-Os redirecionamentos são organizados em quatro grupos, colapsáveis:
-
-| Grupo | Descrição |
+| Repositório | Arquivos (nesta ordem) |
 |---|---|
-| `contact` | Links de contato (Instagram, Signal, etc.) |
-| `events` | Pastas de fotos e documentos de eventos |
-| `video` | Projetos de vídeo (YouTube, downloads, pages) |
-| `tools` | Utilidades e ferramentas diversas |
+| `lucafchala.com` | `_redirects`, `404.js`, `404.html` |
+| `url.lucafchala.com` | `_redirects`, `data.json`, `url.js`, `index.html`, `404.js`, `404.html` |
 
-### Como funciona
+   - **Sem commits vazios:** cada arquivo só é gravado se o conteúdo mudou.
+   - **Script antes da página:** o script vai antes do HTML que o carrega, para nenhum deploy intermediário servir uma página sem o seu script.
+6. **Relatório:** se algo falhar, um diálogo lista cada arquivo (atualizado / sem mudança / falhou) com um botão para tentar de novo só os que falharam.
 
-1. Os redirecionamentos são armazenados em `data.json` neste repositório.
-2. Ao salvar, o painel gera um arquivo `_redirects` (formato Cloudflare Pages) e o envia para os repositórios configurados via GitHub API.
-3. O Cloudflare Pages detecta o push e processa os redirecionamentos automaticamente.
+> Commits simultâneos no mesmo branch dão `409` no GitHub, então nunca use `Promise.all` para gravar no mesmo repositório. `runWrites()` agrupa por repositório e já cuida disso.
 
-### O que é sincronizado ao salvar PURLs
+### Pastes
 
-| Arquivo | `lucafchala.com` | `dash.lucafchala.com` | `url.lucafchala.com` |
-|---|---|---|---|
-| `_redirects` | ✅ | — | ✅ |
-| `data.json` | — | ✅ | ✅ |
-| `index.html` | — | — | ✅ |
-| `404.html` | ✅ | — | ✅ |
-
-> As gravações em cada repositório são feitas sequencialmente para evitar conflitos de SHA na GitHub API (múltiplos commits simultâneos no mesmo branch causam erro 409).
+O mesmo esquema: `pastes.json` primeiro (com verificação de conflito), depois as páginas `{slug}/index.html` dos pastes novos ou alterados, a remoção das páginas de pastes apagados e o `sitemap.xml` do paste.
 
 ---
 
-## url.lucafchala.com
+## Arquivos que o painel gera
 
-O site **[url.lucafchala.com](https://url.lucafchala.com)** é a página pública dos PURLs. Ele exibe todos os redirecionamentos agrupados por classe, no mesmo estilo visual do painel — porém somente leitura (sem edição).
+Todos começam com a marca `generated by dash.lucafchala.com (genX)`. **Edite a função no `index.html` do painel, não o arquivo no outro repositório** — o próximo salvamento sobrescreve edições à mão.
 
-- Os grupos `events` e `video` ficam colapsados por padrão.
-- Botões **copiar** (copia `url.lucafchala.com/slug`) e **abrir** (abre o destino) em cada linha.
-- O `index.html` e `data.json` são gerados e enviados pelo painel a cada salvamento de PURLs.
-- Se `data.json` ainda não existir no repositório (ex.: primeira execução), a página busca automaticamente o fallback em `dash.lucafchala.com/data.json`.
-- Grade de atalhos (**PÁGINAS**) no topo com links para os principais serviços do ecossistema.
+| Função | Arquivo(s) | Destino |
+|---|---|---|
+| `genRedirectsFile(items)` | `_redirects` | lucafchala.com, url |
+| `genDataJson(items)` | `data.json` | dash, url |
+| `gen404Html()` + `gen404Js()` | `404.html`, `404.js` | lucafchala.com, url |
+| `genUrlIndex(items)` + `genUrlJs()` | `index.html`, `url.js` | url |
+| `genPasteShell(p)` | `{slug}/index.html` | paste |
+| `genPastesJson(items)`, `genPasteSitemap(items)` | `pastes.json`, `sitemap.xml` | paste |
 
-### Página 404
+Regras dos geradores:
 
-Qualquer slug inválido em `lucafchala.com` ou `url.lucafchala.com` cai no `404.html` customizado:
-
-- Exibe um **toast de aviso** com o slug tentado — aparece apenas quando o acesso vem de um slug inválido real (não ao navegar para `/404` diretamente).
-- Botão **"Ver todos os links"** aponta para `/` em `url.lucafchala.com` ou para `https://url.lucafchala.com` em `lucafchala.com`, conforme o hostname detectado em runtime.
-- Botão **"← Voltar"** usa `history.back()`.
-- Rodapé com link de contato para `suporte@lucafchala.com`.
-
----
-
-## Pastes
-
-Os **pastes** são snippets de texto ou páginas de conteúdo publicados em **[paste.lucafchala.com](https://paste.lucafchala.com)**. O painel permite criar, editar e excluir pastes diretamente.
-
-### Como funciona
-
-1. Os metadados de todos os pastes (slug, título, conteúdo, tipo, idioma) ficam em `pastes.json` no repositório `paste.lucafchala.com`.
-2. Ao salvar, o painel envia o `pastes.json` atualizado via GitHub API.
-3. Para pastes novos, o painel cria automaticamente um arquivo `{slug}/index.html` no repositório, usando um template padrão que lê o `pastes.json` em runtime para renderizar o conteúdo.
-
-### Tipos de paste
-
-| Tipo | Comportamento |
-|---|---|
-| Texto | Renderiza conteúdo pré-formatado com links clicáveis |
-| PGP | Exibe fingerprint, UID e bloco de chave copiável |
+- **Determinísticos:** mesmos dados, mesmos bytes. Nada de datas ou valores aleatórios, senão todo salvamento regravaria tudo.
+- **Sem `<script>` inline nem `onclick=` no HTML gerado.** Os sites de destino só aceitam scripts de `'self'`, por isso o comportamento fica em `404.js`, `url.js` e, no paste, `paste.js`.
+- **O índice do url traz a lista embutida no HTML:** aparece sem JavaScript e para buscadores.
+- **A página de um paste é uma casca fina:** título, descrição, Open Graph e conteúdo embutidos. A renderização (links, copiar, baixar, PT/EN) fica em `/paste.js` e `/paste.css` no repositório do paste.
 
 ---
 
 ## Configuração
 
-O painel armazena tudo no `localStorage` do navegador. Para autenticar e habilitar edição:
+### Segredos do Cloudflare Pages (Settings → Environment variables)
 
-1. Clique no botão **GH** no canto superior direito.
-2. Insira um **Personal Access Token** do GitHub com permissão `repo` (read + write).
-3. Confirme os repositórios alvo (os padrões já estão preenchidos).
+| Nome | Obrigatório | Uso |
+|---|---|---|
+| `DASH_PASSWORD` | sim | Senha do login; também assina o cookie de sessão |
+| `TURNSTILE_SECRET_KEY` | sim | Chave secreta do Cloudflare Turnstile (a chave do site está em `_middleware.js`) |
+| `GH_PAT` | recomendado | Token *fine-grained* do GitHub com **Contents: read + write** só em `lucafchala.com`, `dash.lucafchala.com`, `paste.lucafchala.com` e `url.lucafchala.com` |
+| `DASH_KV` | opcional | Binding de KV para o limite de tentativas de login valer entre instâncias (sem ele, o limite é em memória e zera a cada cold start) |
+| `GH_REPOS` | opcional | Lista (separada por vírgulas) que substitui os 4 repositórios permitidos no proxy |
 
-### Repositórios configuráveis
+Se faltar `DASH_PASSWORD` ou `TURNSTILE_SECRET_KEY`, o login **falha fechado** — nunca libera o acesso.
 
-| Campo | Padrão |
+### No navegador (`localStorage`)
+
+| Chave | Uso |
 |---|---|
-| Repo principal | `lucafchala/lucafchala.com` |
-| Repo do painel | `lucafchala/dash.lucafchala.com` |
-| Repo de pastes | `lucafchala/paste.lucafchala.com` |
-| Repo de URLs (opcional) | `lucafchala/url.lucafchala.com` |
-
-O repo de URLs é opcional — se configurado, `_redirects`, `data.json`, `index.html` e `404.html` são sincronizados automaticamente.
+| `gh_repo_home`, `gh_repo_dash`, `gh_repo_paste`, `gh_repo_url` | Repositórios de destino (Configurações, botão **GH**). Deixe o do url vazio para não sincronizá-lo |
+| `gh_pat` | **Modo antigo, opcional:** só é usado se `GH_PAT` não estiver configurado no servidor. Nesse caso o campo de token aparece nas configurações; com o proxy ligado ele some e há um botão para remover um token antigo |
+| `theme`, `lang` | Espelho local de `lf_theme` / `lf_lang` |
 
 ---
 
-## Interface
+## Segurança
 
-- **Tema**: dark (padrão) / light, persistido em `localStorage`.
-- **Idioma**: Português BR / English, alternável pelo botão no topo.
-- **PWA**: instalável como app (manifest + service worker com cache stale-while-revalidate).
-- **Busca**: campo de busca filtra PURLs por slug ou destino em tempo real; todos os grupos são expandidos automaticamente durante a busca.
-- **Save bar**: aparece quando há alterações não salvas nos PURLs ou pastes, com botões para salvar ou descartar.
+- **CSP sem `'unsafe-inline'` para scripts:** os dois scripts inline do `index.html` são liberados por hash `sha256` no `_headers`. **Ao editar qualquer script inline, regenere os hashes** — o CI falha se eles não baterem:
+
+  ```bash
+  python3 - <<'PY'
+  import re, hashlib, base64
+  h = lambda x: "'sha256-" + base64.b64encode(hashlib.sha256(x.encode()).digest()).decode() + "'"
+  html = open('index.html', encoding='utf-8').read()
+  hs = [h(m.group(2)) for m in re.finditer(r'<script\b([^>]*)>(.*?)</script>', html, re.S) if 'src=' not in m.group(1) and m.group(2).strip()]
+  hd = open('_headers', encoding='utf-8').read()
+  open('_headers', 'w', encoding='utf-8').write(re.sub(r"script-src 'self'( 'sha256-[^']+')*", "script-src 'self' " + ' '.join(hs), hd, count=1))
+  print(hs)
+  PY
+  ```
+
+- **Eventos:** sem `onclick=` — tudo passa por `data-action` e um único `addEventListener`.
+- **Texto do script inline:** nunca escreva `</script>` nem `<!--` dentro dele. Nos templates, use `<\/script>` e `<\!--`.
+- **Login:**
+  - a página de login tem cabeçalhos próprios (CSP, `X-Frame-Options`, `frame-ancestors`), porque o `_headers` não vale para respostas de Functions;
+  - a senha é comparada em tempo constante;
+  - o `next=` só aceita caminhos da mesma origem.
+- **Proxy:** limitado à Contents API dos repositórios permitidos (os testes cobrem o desvio com `%2e%2e`).
+
+---
+
+## Desenvolvimento
+
+Não há build. Para testar localmente, sirva a pasta com qualquer servidor estático (as Functions não rodam assim; o painel entra em modo somente leitura) ou use `wrangler pages dev .`.
+
+```bash
+node --test tests/*.test.mjs   # middleware + proxy
+```
+
+O CI (`.github/workflows/checks.yml`) verifica:
+
+- JSON válido;
+- escapadores de HTML fracos;
+- `_headers` presente;
+- sintaxe das Functions;
+- **sintaxe do script inline** (extraído do `index.html`) e ausência de `</script`/`<!--` dentro dele;
+- **hashes da CSP** batendo com os scripts inline;
+- nenhum `on*=` no HTML;
+- **validade do `data.json`:** slugs únicos, não reservados e válidos; destinos `http(s)`; grupos e `status` conhecidos;
+- os testes de `tests/`.
+
+Depois de mudar o painel, abra-o, confira e use **sincronizar** (PURLs) e **regenerar páginas** (pastes) para publicar a saída nova dos geradores.
 
 ---
 
@@ -141,146 +200,44 @@ O repo de URLs é opcional — se configurado, `_redirects`, `data.json`, `index
 
 ```
 dash.lucafchala.com/
-├── index.html      # toda a aplicação (HTML + CSS + JS inline)
-├── data.json       # fonte de verdade dos redirecionamentos
-├── manifest.json   # PWA manifest
-├── sw.js           # service worker (cache offline)
-└── icon.svg        # ícone do app
+├── index.html              # toda a aplicação (HTML + CSS + JS inline, scripts liberados por hash)
+├── data.json               # fonte de verdade dos PURLs
+├── functions/
+│   ├── _middleware.js      # login, sessão, logout, 401 para /api/*
+│   └── api/
+│       ├── github.js       # proxy da Contents API (GH_PAT no servidor)
+│       └── healthz.js      # sonda de configuração
+├── tests/functions.test.mjs
+├── sw.js                   # service worker (rede primeiro para a página)
+├── manifest.json, icon.svg, robots.txt, _headers
+├── fonts/                  # fontes auto-hospedadas (OFL)
+├── README.md               # este arquivo
+└── CLAUDE.md               # notas para assistentes de IA
 ```
 
 ---
 
-## Guia de Design
+## Guia de design
 
-Este documento descreve o sistema visual usado pelo painel e por todas as páginas do ecossistema (url, 404, pastes, etc.). Novas páginas devem seguir estes padrões para manter consistência.
+O sistema visual canônico está no [README do hub](https://github.com/lucafchala/lucafchala.com#design-system). Resumo do que o painel usa:
 
-### Tokens de cor
+- **Fontes:** Cormorant Garamond (títulos, nomes de serviços) + JetBrains Mono (todo o resto), auto-hospedadas em `/fonts` com `font-src 'self'`.
+- **Tokens:** `--bg #0d0c0a / #f4efe6`, `--ctrl-bg`, `--border`, `--border-strong`, `--text`, `--muted #948a7c / #6b6152` (contraste AA), `--accent #c08030 / #8a5712`, `--accent-dim` (só bordas), `--up` / `--down` / `--degraded` para os pontos de status.
+- **Layout:** `max-width: 720px`, `padding: 48px 32px 72px` (celular `28px 18px 52px`), cantos de 2–4 px, sem sombras (exceto nos avisos), textura de grão via `body::after`.
+- **Animação:** `rise` escalonada, desligada com `prefers-reduced-motion`.
+- **Componentes:**
+  - `.controls` / `.ctrl-btn` (com `aria-pressed`);
+  - `.rule`, `.hub` / `.hub-primary`;
+  - `.item` (linha de PURL/paste em grid, que quebra em 2–3 linhas no celular);
+  - `.act-btn` (`.ok` / `.del`, altura mínima de 28 px);
+  - `.save-bar`, `dialog`, `.toast`, `.banner`.
 
-Definidos como CSS custom properties, com dois temas:
+### Checklist para uma página nova do ecossistema
 
-| Token | Dark | Light | Uso |
-|---|---|---|---|
-| `--bg` | `#0d0c0a` | `#f4efe6` | Fundo da página |
-| `--border` | `#252220` | `#d8d1c4` | Bordas, linhas divisórias |
-| `--text` | `#e6e1d6` | `#1c1a17` | Texto principal |
-| `--muted` | `#6a6358` | `#9a8f80` | Texto secundário, labels, ícones |
-| `--accent` | `#c08030` | `#a06820` | Destaque — slugs, links ativos, hover |
-| `--accent-dim` | `#6a4818` | `#c89050` | Destaque suave — bordas de foco, setas |
-| `--ctrl-bg` | `#161412` | `#ede8df` | Fundo de cards, inputs, modais |
-
-O tema padrão é `dark`. A alternância persiste em `localStorage` e é aplicada via `data-theme` no `<html>`.
-
-### Tipografia
-
-| Família | Pesos usados | Aplicação |
-|---|---|---|
-| **Cormorant Garamond** (serif) | 300, 400, 600 | Títulos (`h1.name`), nomes de hubs |
-| **JetBrains Mono** (monospace) | 300, 400, 500 | Todo o restante — corpo, labels, botões |
-
-Ambas as fontes são carregadas via Google Fonts com `<link rel="preload">`.
-
-**Tamanhos de texto comuns:**
-
-| Elemento | Tamanho | Notas |
-|---|---|---|
-| `h1.name` | `clamp(48px, 10vw, 72px)` | `font-weight: 300`, `line-height: 0.92` |
-| `.hub-name` | `16px` | Cormorant Garamond, `font-weight: 600` |
-| Corpo | `14px` | Base do `html` |
-| `.redirect-slug` | `12px` | Cor `--accent` |
-| `.redirect-dest` | `11px` | Cor `--muted`, truncado com ellipsis |
-| Labels / `.micro` | `10px` | `letter-spacing: 0.14em`, uppercase |
-| Botões de ação | `9px` | `letter-spacing: 0.07em`, uppercase |
-| `.group-header` | `9px` | `letter-spacing: 0.12em`, uppercase |
-
-### Layout
-
-- Largura máxima: **680px**, centralizada, com `padding: 48px 32px 72px`.
-- `border-radius` padrão: **3px** em cards, inputs, botões. Modais usam **4px**.
-- Sem sombras — profundidade é indicada apenas por bordas e fundo levemente diferente (`--ctrl-bg`).
-- Textura de ruído sutil via `body::after` com SVG de `feTurbulence` (opacidade ~0.28).
-
-### Estrutura de página
-
-```
-<html data-theme="dark">
-  <head>
-    <!-- Fontes: Cormorant Garamond + JetBrains Mono -->
-    <!-- theme-color: #0d0c0a -->
-    <!-- manifest.json (se PWA) -->
-  </head>
-  <body>
-    <!-- 1. Controls bar (canto superior direito) -->
-    <div class="controls">...</div>
-
-    <!-- 2. Header -->
-    <header>
-      <h1 class="name">Título <em>em itálico accent</em></h1>
-      <p class="micro">subtítulo em caixa alta</p>
-    </header>
-
-    <!-- 3. Sections separadas por .rule -->
-    <div class="rule">NOME DA SEÇÃO</div>
-    <div class="section-content">...</div>
-  </body>
-</html>
-```
-
-### Componentes
-
-#### `.rule` — Divisor de seção
-Linha horizontal com texto centralizado em `--muted`, `font-size: 10px`, `letter-spacing: 0.1em`. Gerada com `::before` e `::after` em flex.
-
-#### `.hub` — Card de serviço
-Card clicável (`<a>`) com borda `--border`, fundo `--ctrl-bg`, `border-radius: 3px`. No hover: `border-color: --accent-dim`, `background: --border`, `translateY(-1px)`. Variante `.hub-primary` ocupa toda a largura com `border-left: 3px solid --accent`.
-
-#### `.act-btn` — Botão de ação inline
-Botão pequeno monospace, borda `--border`, texto `--muted`. No hover: texto `--text`, borda `--accent-dim`. Variante `.ok`: texto e borda `--accent`. Variante `.del`: tons avermelhados.
-
-#### `.ctrl-btn` — Botão de controle (barra superior)
-Sem borda própria, dentro de `.controls-inner`. Texto `--muted`, hover vira `--accent`.
-
-#### `.modal-overlay` — Modal
-Overlay com `rgba(0,0,0,0.72)` e `backdrop-filter: blur(3px)`. Modal interno com fundo `--ctrl-bg`, borda `--border`, `max-width: 520px`.
-
-#### `.save-bar` — Barra de salvamento
-`position: sticky; bottom: 20px`. Aparece com `opacity: 1` e `translateY(0)` quando tem a classe `.visible`.
-
-#### Inputs e selects
-Fundo `--ctrl-bg`, borda `--accent-dim`, cor `--text`, fonte JetBrains Mono `11px`. No foco: borda vira `--accent`.
-
-### Animações
-
-Seções entram com a animação `rise`:
-
-```css
-@keyframes rise {
-  from { opacity: 0; transform: translateY(18px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-```
-
-Aplicada com `animation: rise 0.9s cubic-bezier(0.16,1,0.3,1) Xs both`, onde `X` é um delay escalonado (0s, 0.12s, 0.20s, 0.28s, 0.36s, 0.44s…) para criar efeito cascata.
-
-### Checklist para nova página
-
-- [ ] `<html lang="pt-BR" data-theme="dark">`
-- [ ] Script inline antes do `<style>` para ler `localStorage('theme')` e aplicar `data-theme`
-- [ ] `theme-color` meta tag: `#0d0c0a`
-- [ ] Fontes: Cormorant Garamond + JetBrains Mono via Google Fonts com `preload`
-- [ ] Tokens de cor definidos em `:root` e `[data-theme="light"]`
-- [ ] Ruído de fundo via `body::after` com SVG `feTurbulence`
-- [ ] `max-width: 680px; margin: 0 auto; padding: 48px 32px 72px`
-- [ ] Títulos com `.name` (Cormorant Garamond 300) e `<em>` em `--accent`
-- [ ] Seções separadas por `.rule`
-- [ ] Botões usando `.act-btn` ou `.ctrl-btn`
-- [ ] Animação `rise` com delays escalonados nas seções
-
----
-
-## Tecnologias
-
-- HTML / CSS / JavaScript puro — sem frameworks, sem build step
-- GitHub Contents API para leitura e escrita de arquivos
-- Cloudflare Pages para deploy e processamento de `_redirects`
-- Service Worker para suporte offline (stale-while-revalidate)
-- Google Fonts: Cormorant Garamond + JetBrains Mono
+- [ ] `<html lang="pt-BR" data-theme="dark">` e `<meta name="theme-color">`
+- [ ] Tema antes da pintura: `/theme.js` síncrono no `<head>` (lê o cookie `lf_theme`) com `data-cfasync="false"`
+- [ ] Fontes em `/fonts` + `@font-face`, CSP com `font-src 'self'`
+- [ ] Nenhum `<script>` inline nem `on*=`; CSP `script-src 'self'`
+- [ ] Barra `PT | EN · ◐` com `aria-pressed` e `aria-label`
+- [ ] `:focus-visible`, `prefers-reduced-motion`, alvos de toque ≥ 24 px, link "pular para o conteúdo"
+- [ ] Sem rolagem lateral em 360 px
