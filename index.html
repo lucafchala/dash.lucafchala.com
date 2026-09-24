@@ -395,7 +395,7 @@
                 <div class="modal-grid">
                     <div class="modal-field">
                         <label for="pm-type" data-i18n="lbl_type">Tipo</label>
-                        <select id="pm-type"><option value="text" data-i18n="type_text">texto</option><option value="pgp" data-i18n="type_pgp">chave PGP</option></select>
+                        <select id="pm-type"><option value="text" data-i18n="type_text">texto</option><option value="pgp" data-i18n="type_pgp">chave PGP</option><option value="links" data-i18n="type_links">links (aviso + botões)</option></select>
                     </div>
                     <div class="modal-field" id="pm-fp-field" hidden>
                         <label for="pm-fp" data-i18n="lbl_fp">Fingerprint</label>
@@ -458,7 +458,7 @@
             retry: 'tentar de novo',
             paste_new: '+ novo', regen: 'regenerar páginas', paste_new_title: 'Novo paste', paste_edit_title: 'Editar paste',
             lbl_subtitle: 'Subtítulo', lbl_lang: 'Idioma do conteúdo', lbl_desc_pt: 'Descrição (PT)', lbl_desc_en: 'Descrição (EN)', lbl_type: 'Tipo',
-            lbl_fp: 'Fingerprint', lbl_content: 'Conteúdo', type_text: 'texto', type_pgp: 'chave PGP', preview: 'prévia', edit_mode: 'editar',
+            lbl_fp: 'Fingerprint', lbl_content: 'Conteúdo', type_text: 'texto', type_pgp: 'chave PGP', type_links: 'links (aviso + botões)', preview: 'prévia', edit_mode: 'editar',
             changes: n => `${n} alteraç${n === 1 ? 'ão' : 'ões'} não salva${n === 1 ? '' : 's'}`, order_changed: 'ordem alterada',
             export: 'exportar', import: 'importar', sync: 'sincronizar',
             import_title: 'Importar redirecionamentos', import_invalid: 'Arquivo inválido: esperava {"redirects": [...]} ou uma lista.',
@@ -512,7 +512,7 @@
             retry: 'retry',
             paste_new: '+ new', regen: 'regenerate pages', paste_new_title: 'New paste', paste_edit_title: 'Edit paste',
             lbl_subtitle: 'Subtitle', lbl_lang: 'Content language', lbl_desc_pt: 'Description (PT)', lbl_desc_en: 'Description (EN)', lbl_type: 'Type',
-            lbl_fp: 'Fingerprint', lbl_content: 'Content', type_text: 'text', type_pgp: 'PGP key', preview: 'preview', edit_mode: 'edit',
+            lbl_fp: 'Fingerprint', lbl_content: 'Content', type_text: 'text', type_pgp: 'PGP key', type_links: 'links (notice + buttons)', preview: 'preview', edit_mode: 'edit',
             changes: n => `${n} unsaved change${n === 1 ? '' : 's'}`, order_changed: 'order changed',
             export: 'export', import: 'import', sync: 'sync',
             import_title: 'Import redirects', import_invalid: 'Invalid file: expected {"redirects": [...]} or a list.',
@@ -1382,11 +1382,11 @@ document.addEventListener('DOMContentLoaded',function(){
 <script data-cfasync="false" src="/theme.js"><\/script>
 <script data-cfasync="false" src="/paste.js" defer><\/script>
 </head>
-<body data-slug="${esc(slug)}" data-type="${pgp ? 'pgp' : 'text'}">
+<body data-slug="${esc(slug)}" data-type="${pgp ? 'pgp' : p.type === 'links' ? 'links' : 'text'}">
 <a class="skip" href="#paste-content" data-i18n="skip">Pular para o conteúdo</a>
-<div class="controls"><a href="/" class="back" data-i18n="back">← pastes</a>${GEN_CONTROLS.replace('<div class="controls">', '').replace(/<\/div>$/, '')}</div>
-<header><h1 class="slug" id="paste-slug">${esc(slug)}</h1><p class="micro">paste.lucafchala.com</p></header>
-<div class="rule" id="paste-rule">${esc(p.subtitle || 'PASTE')}</div>
+<nav class="controls" aria-label="paste.lucafchala.com"><a href="/" class="back" data-i18n="back">← pastes</a>${GEN_CONTROLS.replace('<div class="controls">', '').replace(/<\/div>$/, '')}</nav>
+<header><h1 class="slug" id="paste-slug">${esc(slug)}</h1><p class="micro">paste.lucafchala.com</p>
+<div class="rule" id="paste-rule">${esc(p.subtitle || 'PASTE')}</div></header>
 <main class="content" id="paste-content" lang="${en ? 'en' : 'pt-BR'}">
 ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
 </main>
@@ -1518,7 +1518,7 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
         if (!paste.items.length) html += `<p class="empty">${esc(paste.error ? s().load_error_paste : s().loading)}</p>`;
         else if (!items.length) html += `<p class="empty">${esc(s().no_results)}</p>`;
         else html += `<ul class="rows">${items.map(p => `<li class="item">
-            <span class="item-slug">${esc(p.slug)}${p.type === 'pgp' ? '<span class="badge">PGP</span>' : ''}</span>
+            <span class="item-slug">${esc(p.slug)}${p.type === 'pgp' ? '<span class="badge">PGP</span>' : p.type === 'links' ? '<span class="badge">LINKS</span>' : ''}</span>
             <span class="item-dest" title="${esc(pasteDesc(p))}">${esc(pasteDesc(p))}</span>
             <span class="item-actions">
                 <a class="act-btn" href="https://paste.lucafchala.com/${esc(p.slug)}/" target="_blank" rel="noopener noreferrer">${esc(s().open)}</a>
@@ -1540,7 +1540,7 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
         el('pm-desc').value = p.description || '';
         el('pm-desc-en').value = p.description_en || '';
         el('pm-lang').value = p.lang === 'en' ? 'en' : 'pt';
-        el('pm-type').value = p.type === 'pgp' ? 'pgp' : 'text';
+        el('pm-type').value = p.type === 'pgp' || p.type === 'links' ? p.type : 'text';
         el('pm-fp').value = p.fingerprint || '';
         el('pm-fp-field').hidden = el('pm-type').value !== 'pgp';
         el('pm-content').value = p.content || '';
@@ -1557,12 +1557,32 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
             return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>${trail}`;
         });
     }
+    /* Same rule as renderLinks() in the paste repo's paste.js (type "links"):
+       blank-line blocks; last line a URL → link row; "title + - items" → list;
+       first other block → notice. */
+    function previewLinks(text) {
+        let noticeDone = false;
+        return text.split(/\n[ \t]*\n/).map(block => {
+            const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+            if (!lines.length) return '';
+            const last = lines[lines.length - 1];
+            if (/^https?:\/\/\S+$/.test(last)) {
+                const cap = lines.slice(0, -1).join(' ').replace(/:\s*$/, '');
+                return `<p class="modal-hint">${esc(cap)}</p><p><a href="${esc(last)}" target="_blank" rel="noopener noreferrer">${esc(last.replace(/^https?:\/\//, ''))} ↗</a></p>`;
+            }
+            if (lines.length > 1 && lines.slice(1).every(l => /^[-•*]\s+/.test(l))) {
+                return `<p class="modal-hint">${esc(lines[0].replace(/:\s*$/, ''))}: ${lines.slice(1).map(l => esc(l.replace(/^[-•*]\s+/, ''))).join(', ')}</p>`;
+            }
+            if (!noticeDone) { noticeDone = true; return `<p><strong>${esc(lines.join(' '))}</strong></p>`; }
+            return `<p>${esc(lines.join(' '))}</p>`;
+        }).join('');
+    }
     function renderPreview() {
         const type = el('pm-type').value;
         const content = el('pm-content').value;
         el('pm-preview').innerHTML = type === 'pgp'
             ? `<p class="modal-hint">fingerprint: ${esc(fmtFingerprint(el('pm-fp').value))}</p><pre>${esc(content)}</pre>`
-            : `<pre>${linkify(content)}</pre>`;
+            : type === 'links' ? previewLinks(content) : `<pre>${linkify(content)}</pre>`;
     }
 
     function confirmPasteEdit() {
@@ -1578,6 +1598,7 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
         const base = isNew ? {} : paste.items.find(p => p.slug === pasteEditSlug);
         const next = { slug: isNew ? slug : base.slug, subtitle: el('pm-subtitle').value.trim(), description: el('pm-desc').value.trim(), description_en: el('pm-desc-en').value.trim(), lang: el('pm-lang').value };
         if (type === 'pgp') { next.type = 'pgp'; if (fp) next.fingerprint = fp; }
+        if (type === 'links') next.type = 'links';
         next.content = content;
         if (isNew) paste.items.push(next);
         else paste.items[paste.items.findIndex(p => p.slug === pasteEditSlug)] = next;

@@ -55,7 +55,11 @@ Um PURL é `lucafchala.com/<slug> → destino`. Os mesmos links funcionam em `ur
 
 ### Pastes
 
-- Criar, editar e remover pastes. Campos: slug, subtítulo, descrição PT/EN, idioma do conteúdo, tipo (texto ou chave PGP), fingerprint (PGP) e conteúdo.
+- Criar, editar e remover pastes. Campos: slug, subtítulo, descrição PT/EN, idioma do conteúdo, tipo, fingerprint (PGP) e conteúdo.
+- **Tipos:**
+  - **texto**;
+  - **chave PGP**;
+  - **links** — aviso + botões, para páginas como os projetos de vídeo. Blocos separados por linha em branco: um bloco cuja última linha é uma URL vira botão (as linhas acima são a legenda), um título seguido de linhas `- item` vira lista, e o primeiro bloco restante vira o aviso. A regra está em `paste.js` (repo paste) e na prévia.
 - **Prévia** do conteúdo antes de salvar (com os links já clicáveis).
 - Remover um paste também apaga a página `{slug}/index.html` — mas só se for uma página gerada pelo painel. Páginas feitas à mão nunca são sobrescritas nem apagadas.
 - **Regenerar páginas:** reescreve todas as páginas geradas com o modelo atual.
@@ -196,6 +200,17 @@ Depois de mudar o painel, abra-o, confira e use **sincronizar** (PURLs) e **rege
 
 ---
 
+## Verificação semanal dos links
+
+`.github/workflows/links.yml` roda toda segunda (e a cada mudança em `data.json`). `scripts/check-links.py` testa cada destino.
+
+- **Conta como quebrado:**
+  - HTTP 404/410/5xx;
+  - DNS, TLS ou tempo esgotado;
+  - um link do Google Drive/Docs que cai no login do Google (compartilhamento desligado — é assim que link do Drive morre calado).
+- **Não conta:** 401/403/429 e códigos como o 999 do LinkedIn. Redes sociais respondem isso a qualquer robô, e arquivos do Drive restritos a um domínio respondem 401. Eles aparecem numa lista à parte.
+- **A issue "Links quebrados" (label `links-quebrados`)** é aberta, atualizada e fechada sozinha. A verificação roda no runner do GitHub, nunca no painel, então não há superfície de SSRF.
+
 ## Estrutura do repositório
 
 ```
@@ -208,6 +223,7 @@ dash.lucafchala.com/
 │       ├── github.js       # proxy da Contents API (GH_PAT no servidor)
 │       └── healthz.js      # sonda de configuração
 ├── tests/functions.test.mjs
+├── scripts/check-links.py  # verificação semanal dos destinos (usada por .github/workflows/links.yml)
 ├── sw.js                   # service worker (rede primeiro para a página)
 ├── manifest.json, icon.svg, robots.txt, _headers
 ├── fonts/                  # fontes auto-hospedadas (OFL)
