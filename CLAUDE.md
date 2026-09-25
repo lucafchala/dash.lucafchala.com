@@ -72,7 +72,7 @@ CLAUDE.md             # this file
 - `status` is only present when 301. Absent means **302** (the default, because browsers cache 301 forever).
 - `normalizePurl()` enforces this shape and key order. `genDataJson()` must stay byte-stable.
 
-`pastes.json`: `{ "pastes": [ { slug, subtitle, description, description_en, lang, [type: "pgp", fingerprint], content } ] }`.
+`pastes.json`: `{ "pastes": [ { slug, subtitle, description, description_en, lang, [type: "pgp" + fingerprint | type: "links"], content } ] }`.
 
 ---
 
@@ -86,7 +86,7 @@ CLAUDE.md             # this file
   - each write fetches the current file and **skips it if the content is identical** (no empty commits);
   - `getFile` returns `null` only on 404; other errors propagate;
   - scripts are written before the HTML that loads them.
-- **Page guard:** paste writes carry `guard: isManagedPastePage`. Pages without the `dash:paste-shell` marker (or the legacy template's `fetch('/pastes.json')`) are **never overwritten or deleted**. Hand-built pages (`nirvana-…`, `vela_f5-2024`, `cloudspot_deprecation`) stay untouched.
+- **Page guard:** paste writes carry `guard: isManagedPastePage`. Pages without the `dash:paste-shell` marker (or the legacy template's `fetch('/pastes.json')`) are **never overwritten or deleted**. The one hand-built page left, `cloudspot_deprecation`, stays untouched (`nirvana-…` and `vela_f5-2024` became generated `type: "links"` shells in paste#11).
 - **Report:** `report()` shows per-file results. Failures get a retry that re-runs only the failed writes.
 - **Sync / regenerate:** "sincronizar" / "regenerar páginas" re-run the derived writes from saved data. Use them after changing a generator.
 
