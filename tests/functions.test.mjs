@@ -161,6 +161,15 @@ describe('middleware', () => {
     assert.match(out.headers.get('Set-Cookie'), /Max-Age=0/);
   });
 
+  test('a malformed cookie reads as absent instead of throwing', async () => {
+    const res = await mw('/', { cookie: 'dash_session=%E0%A4%A' });
+    assert.equal(res.status, 302);
+    assert.match(res.headers.get('Location'), /^\/login\?next=/);
+    const page = await mw('/login', { cookie: 'lf_theme=%; dash_session=%' });
+    assert.equal(page.status, 200);
+    assert.match(await page.text(), /data-theme="dark"/);
+  });
+
   test('missing DASH_PASSWORD fails closed', async () => {
     const res = await mw('/', { cookie: 'dash_session=9999999999.abc', env: {} });
     assert.equal(res.status, 302);

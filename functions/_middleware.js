@@ -64,11 +64,16 @@ async function isAuthed(request, env) {
   return verifyToken(token, env.DASH_PASSWORD);
 }
 
+/* lf_theme is written by every *.lucafchala.com site on the parent domain:
+   one malformed value (a stray `%`) must read as "no cookie", not throw a
+   URIError that turns the login page into a 500. */
 function readCookie(request, name) {
   const cookies = request.headers.get('Cookie') || '';
   for (const part of cookies.split(';')) {
     const i = part.indexOf('=');
-    if (i !== -1 && part.slice(0, i).trim() === name) return decodeURIComponent(part.slice(i + 1).trim());
+    if (i !== -1 && part.slice(0, i).trim() === name) {
+      try { return decodeURIComponent(part.slice(i + 1).trim()); } catch { return null; }
+    }
   }
   return null;
 }
