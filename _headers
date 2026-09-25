@@ -1,5 +1,5 @@
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-/M6blplVLqs0tJp0++YW377r+Mg42Dsf7rQioJh6ocQ=' 'sha256-pcZCWdILia+zJT+gt1gx1tgfpexbrqNo7cQtTXrMuUs='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://paste.lucafchala.com https://status.lucafchala.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-/M6blplVLqs0tJp0++YW377r+Mg42Dsf7rQioJh6ocQ=' 'sha256-A6dSmXeB/HlY82esIWuFXSW83w61rwR1pQ5osMgns1I='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://paste.lucafchala.com https://status.lucafchala.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY

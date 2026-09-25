@@ -590,6 +590,8 @@
     ].map(name => ({ name, repo: `lucafchala/${name}` })).concat([{ name: 'OMG.LOL_transfer', repo: 'lucafchala/OMG.LOL_transfer', note: true }]);
 
     let statusMap = {};
+    /* Only these reach the dot's class attribute; anything else is "unknown". */
+    const LIVE_STATES = new Set(['up', 'degraded', 'down']);
     const normalizeUrl = u => String(u).replace(/\/+$/, '').toLowerCase();
 
     /* ── Validation ── */
@@ -2005,8 +2007,9 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
     function renderHubs() {
         el('hubs-grid').innerHTML = HUBS.map(h => {
             const [name, desc] = s().hubs[h.key];
-            const st = statusMap[normalizeUrl(h.url)] || 'unknown';
-            const dot = `<span class="dot ${st}" role="img" aria-label="${esc(s().dot[st] || st)}" title="${esc(s().dot[st] || st)}"></span>`;
+            const v = statusMap[normalizeUrl(h.url)];
+            const st = LIVE_STATES.has(v) ? v : 'unknown';
+            const dot = `<span class="dot ${esc(st)}" role="img" aria-label="${esc(s().dot[st] || st)}" title="${esc(s().dot[st] || st)}"></span>`;
             const host = h.url.replace('https://', '');
             if (h.primary) {
                 return `<a href="${h.url}" class="hub hub-primary" target="_blank" rel="noopener noreferrer"><div class="hub-primary-body"><span class="hub-name">${esc(name)}</span><span class="hub-desc">${esc(desc)}</span><span class="hub-url">${esc(host)}</span></div>${dot}<span class="hub-arrow" aria-hidden="true">↗</span></a>`;
@@ -2135,12 +2138,18 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
         updateGhBtn();
         await Promise.all([loadPurls(), loadPastes()]);
     }
+    /* /api/resumo, never /api/status: resumo only reads status's D1 snapshot
+       (small, CORS-open, cached), while /api/status sweeps every subdomain and
+       runs the alert pass whenever the snapshot is stale. A stale or unshared
+       snapshot says nothing about now, so the dots stay "unknown" rather than
+       green. */
     function loadStatus() {
-        fetch('https://status.lucafchala.com/api/status', { cache: 'no-store' })
+        fetch('https://status.lucafchala.com/api/resumo', { credentials: 'omit' })
             .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
             .then(data => {
+                if (!data || data.retratoCompartilhado !== true || data.atrasado === true || !Array.isArray(data.services)) return;
                 statusMap = {};
-                (data.services || []).forEach(m => { if (m.url && m.status) statusMap[normalizeUrl(m.url)] = m.status; });
+                data.services.forEach(m => { if (m && typeof m.url === 'string' && LIVE_STATES.has(m.status)) statusMap[normalizeUrl(m.url)] = m.status; });
                 renderHubs();
             })
             .catch(() => { /* dots stay neutral */ });
