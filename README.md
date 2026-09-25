@@ -137,6 +137,8 @@ Regras dos geradores:
 | `GH_PAT` | recomendado | Token *fine-grained* do GitHub com **Contents: read + write** só em `lucafchala.com`, `dash.lucafchala.com`, `paste.lucafchala.com` e `url.lucafchala.com` |
 | `DASH_KV` | opcional | Binding de KV para o limite de tentativas de login valer entre instâncias (sem ele, o limite é em memória e zera a cada cold start) |
 | `GH_REPOS` | opcional | Lista (separada por vírgulas) que substitui os 4 repositórios permitidos no proxy |
+| `CF_ANALYTICS_TOKEN` | opcional | Token da Cloudflare com **Zone › Analytics › Read** só na zona `lucafchala.com`, para a contagem de cliques (`/api/clicks`) |
+| `CF_ZONE_ID` | opcional | Zone ID de `lucafchala.com` (Overview da zona, coluna da direita). Sem os dois, o painel diz "Cliques: não configurado" |
 
 Se faltar `DASH_PASSWORD` ou `TURNSTILE_SECRET_KEY`, o login **falha fechado** — nunca libera o acesso.
 
@@ -199,6 +201,18 @@ O CI (`.github/workflows/checks.yml`) verifica:
 Depois de mudar o painel, abra-o, confira e use **sincronizar** (PURLs) e **regenerar páginas** (pastes) para publicar a saída nova dos geradores.
 
 ---
+
+## Cliques nos links curtos
+
+`/api/clicks` fica atrás do login e mostra ao lado de cada slug quantas vezes ele foi aberto.
+
+- **De onde vem o número:** a análise HTTP da própria zona. Cada clique é um pedido a `lucafchala.com/<slug>` respondido com 301/302 pelo `_redirects`. A consulta GraphQL pede a contagem de 3xx por caminho (`httpRequestsAdaptiveGroups`, host `lucafchala.com`).
+- **Por que não o Web Analytics:** ele é um beacon em JS e não vê redirecionamentos.
+- **O que nunca acontece:** nada muda em como os links são servidos, nada é gravado e nenhum IP é pedido.
+- **Janela:** a Cloudflare não publica o limite por plano. Por isso a função pergunta primeiro ao nó `settings` (`enabled`, `notOlderThan`, `maxDuration`) e usa a maior janela permitida, até 30 dias. O painel mostra "N cliques em X dias".
+- **Precisão:** o dataset é adaptativo (amostrado), então o número é uma estimativa.
+- **Custo:** uma consulta a cada 5 min por instância, no máximo.
+- **Histórico:** se a janela do plano Free for curta demais para ser útil, o próximo passo é guardar um total diário no D1 do status, que já tem agendador a cada 10 min. Não foi feito agora para manter a menor implementação que funciona.
 
 ## Verificação semanal dos links
 
