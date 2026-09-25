@@ -14,7 +14,8 @@ A few Pages Functions provide the backend:
 |---|---|
 | `functions/_middleware.js` | Auth gate for every path except `PUBLIC_PATHS`/`PUBLIC_PREFIXES` and `/api/healthz`. Login = `DASH_PASSWORD` (constant-time compare) + Turnstile + rate limit (KV if `DASH_KV`, else in-memory). Session cookie `dash_session` = `exp.HMAC(exp)` keyed by the password, 24 h, HttpOnly/Secure/SameSite=Strict. `/logout` clears it. Unauthenticated `/api/*` gets **401 JSON** (not a 302). The login page sets its own security headers (`_headers` doesn't apply to Function responses) and has no inline script. `next=` is validated to be same-origin |
 | `functions/api/github.js` | GitHub Contents API proxy using the `GH_PAT` secret. `GET` returns `{configured, repos}`. `POST {path, method, body}` accepts only `GET/PUT/DELETE` on `<owner>/<repo>/contents/<segments>` for allowlisted repos (default 4, override with `GH_REPOS`). It rejects `%`, `\`, `?`, `#`, whitespace, and `.`/`..` segments — fetch() would decode `%2e%2e` into a path traversal |
-| `functions/api/healthz.js` | Public config probe (booleans only) used by status |
+| `functions/api/healthz.js` | Public config probe (booleans only) used by status; `clicks` says whether the analytics secrets are set |
+| `functions/api/clicks.js` | Clicks per short link, behind login. It queries the zone's GraphQL `httpRequestsAdaptiveGroups` (3xx per `clientRequestPath` on host `lucafchala.com`), asking `settings` first for the plan's window (up to 30 d). Never requests IPs, stores nothing, 5-min memo. Secrets `CF_ANALYTICS_TOKEN` (Zone › Analytics › Read) + `CF_ZONE_ID`; without them → `{configured:false}` |
 
 Weekly link check: `.github/workflows/links.yml` + `scripts/check-links.py`.
 - Broken = 404/410/5xx, network error, or a Drive link landing on the Google login.

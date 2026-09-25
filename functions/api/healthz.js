@@ -8,6 +8,7 @@ export async function onRequestGet({ env }) {
     turnstileSecret: !!env.TURNSTILE_SECRET_KEY,
     githubProxy: !!env.GH_PAT,
     kvRateLimit: !!env.DASH_KV,
+    clicks: !!(env.CF_ANALYTICS_TOKEN && env.CF_ZONE_ID),
   }), {
     headers: { 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store' },
   });
