@@ -52,7 +52,7 @@
     },
     {
       "slug": "ibiúna_2025",
-      "destination": "https://paste.lucafchala.com/cloudspot_deprecation",
+      "destination": "https://fotos.lucafchala.com/ibiunacarnaval",
       "group": "events"
     },
     {
@@ -159,11 +159,6 @@
       "slug": "para-alem-de-sonhar",
       "destination": "https://youtu.be/3j1NFW43o0o",
       "group": "video"
-    },
-    {
-      "slug": "review",
-      "destination": "https://forms.gle/AoMuMFPj9TFuzS3H8",
-      "group": "tools"
     },
     {
       "slug": "cloudspot_dashboard",
