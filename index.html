@@ -474,7 +474,7 @@
             results_title: 'Resultado do salvamento', res: { updated: 'atualizado', unchanged: 'sem mudança', kept: 'mantido (página personalizada)', failed: 'falhou', deleted: 'removido' },
             res_summary: (u, s, f) => `Salvo · ${u} arquivo(s) atualizado(s), ${s} sem mudança${f ? `, ${f} com falha` : ''}.`,
             retry_failed: 'tentar os que falharam', sync_confirm: 'Reescrever _redirects, 404 e o índice do url a partir dos dados salvos?',
-            regen_confirm: 'Regenerar a página de cada paste com o modelo atual?', nothing_to_sync: 'Salve ou descarte as alterações antes de sincronizar.',
+            regen_confirm: 'Regenerar a página de cada paste com o modelo atual?', busy: 'Aguarde: outra gravação ainda está em andamento.', nothing_to_sync: 'Salve ou descarte as alterações antes de sincronizar.',
             err: {
                 slug_required: 'Informe o slug.', slug_invalid: 'Use letras minúsculas, números, ".", "_" ou "-" (sem espaços, sem começar com símbolo).',
                 slug_reserved: s => `"/${s}" é reservado por um arquivo do site.`, slug_dup: s => `"/${s}" já existe.`,
@@ -532,7 +532,7 @@
             results_title: 'Save result', res: { updated: 'updated', unchanged: 'unchanged', kept: 'kept (custom page)', failed: 'failed', deleted: 'deleted' },
             res_summary: (u, s, f) => `Saved · ${u} file(s) updated, ${s} unchanged${f ? `, ${f} failed` : ''}.`,
             retry_failed: 'retry failed', sync_confirm: 'Rewrite _redirects, the 404 and the url index from the saved data?',
-            regen_confirm: 'Regenerate every paste page with the current template?', nothing_to_sync: 'Save or discard your changes before syncing.',
+            regen_confirm: 'Regenerate every paste page with the current template?', busy: 'Wait: another write is still running.', nothing_to_sync: 'Save or discard your changes before syncing.',
             err: {
                 slug_required: 'Enter a slug.', slug_invalid: 'Use lowercase letters, digits, ".", "_" or "-" (no spaces, must not start with a symbol).',
                 slug_reserved: s => `"/${s}" is reserved by a file on the site.`, slug_dup: s => `"/${s}" already exists.`,
@@ -1448,8 +1448,13 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
         return writes;
     }
 
+    /* One writer per kind at a time: a save's derived writes, "sincronizar" /
+       "regenerar páginas" and a retry all commit to the same repos, and two of
+       them interleaving is the concurrent-commit 409 that runWrites() exists
+       to avoid. `saving` is the lock; these buttons mirror it. */
+    const BUSY_ACTIONS = { purls: ['save-purls', 'discard-purls', 'sync-purls'], pastes: ['save-pastes', 'discard-pastes', 'regen-pastes'] };
     function setBusy(which, busy) {
-        document.querySelectorAll(`[data-action="save-${which}"], [data-action="discard-${which}"]`).forEach(b => {
+        document.querySelectorAll(BUSY_ACTIONS[which].map(a => `[data-action="${a}"]`).join(', ')).forEach(b => {
             b.disabled = busy;
             if (b.dataset.action.startsWith('save')) b.textContent = busy ? s().saving : s().save;
         });
@@ -1475,7 +1480,7 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
             if (!conflict) {
                 purl.saved = snap;
                 await runWrites(derivedPurlWrites(snap, c), results);
-                report(results, () => runWrites(results.filter(r => r.state === 'failed' && r.write).map(r => r.write), []));
+                report(results, 'purls');
             }
         } catch (e) {
             report(results);
@@ -1488,8 +1493,9 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
     }
 
     async function syncPurls() {
+        if (purl.saving) return;
         if (purlDirty()) { toast(s().nothing_to_sync, { error: true }); return; }
-        if (!await confirmDialog(s().sync_confirm)) return;
+        if (!await confirmDialog(s().sync_confirm) || purl.saving) return;
         const results = [];
         purl.saving = true; setBusy('purls', true);
         try { await runWrites(derivedPurlWrites(purl.saved, cfg()), results); report(results); }
@@ -1523,7 +1529,9 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
         }
     }
 
-    function report(results, retry) {
+    /* `kind` ('purls' | 'pastes') offers a retry of the failed writes, run
+       under the same lock as a save. */
+    function report(results, kind) {
         if (!results.length) return;
         const count = st => results.filter(r => r.state === st).length;
         const failed = count('failed');
@@ -1531,9 +1539,16 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
         if (!failed) { toast(summary); return; }
         const rows = results.map(r => `<li><span class="res-${r.state}">${esc(s().res[r.state] || r.state)}</span><span>${esc(r.repo.split('/')[1])}/${esc(r.path)}${r.error ? ` — ${esc(r.error)}` : ''}</span></li>`).join('');
         const actions = [{ label: s().close, value: null }];
-        if (retry) actions.push({ label: s().retry_failed, value: 'retry', kind: 'ok' });
+        if (kind) actions.push({ label: s().retry_failed, value: 'retry', kind: 'ok' });
         openDialog({ title: s().results_title, body: `<p>${esc(summary)}</p><ul class="res-list">${rows}</ul>`, actions }).then(async v => {
-            if (v === 'retry') { const again = []; await runWrites(results.filter(r => r.state === 'failed' && r.write).map(r => r.write), again); report(again, retry); }
+            if (v !== 'retry') return;
+            const st = kind === 'purls' ? purl : paste;
+            if (st.saving) { toast(s().busy, { error: true }); return; }
+            const again = [];
+            st.saving = true; setBusy(kind, true);
+            try { await runWrites(results.filter(r => r.state === 'failed' && r.write).map(r => r.write), again); }
+            finally { st.saving = false; setBusy(kind, false); }
+            report(again, kind);
         });
     }
 
@@ -1693,7 +1708,7 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
                 const writes = pasteWrites(paste.saved, snap, c.repoPaste);
                 paste.saved = snap;
                 await runWrites(writes, results);
-                report(results, true);
+                report(results, 'pastes');
             }
         } catch (e) {
             report(results);
@@ -1706,11 +1721,13 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
     }
 
     async function regenPastes() {
-        if (!await confirmDialog(s().regen_confirm)) return;
+        if (paste.saving) return;
+        if (!await confirmDialog(s().regen_confirm) || paste.saving) return;
         const results = [];
         paste.saving = true; setBusy('pastes', true);
-        try { await runWrites(pasteWrites(paste.saved, paste.saved, cfg().repoPaste, true), results); report(results, true); }
+        try { await runWrites(pasteWrites(paste.saved, paste.saved, cfg().repoPaste, true), results); }
         finally { paste.saving = false; setBusy('pastes', false); }
+        report(results, 'pastes');
     }
 
     /* ── Import / export ── */
