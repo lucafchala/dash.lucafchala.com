@@ -64,22 +64,32 @@ async function isAuthed(request, env) {
   return verifyToken(token, env.DASH_PASSWORD);
 }
 
+/* lf_theme is written by every *.lucafchala.com site on the parent domain:
+   one malformed value (a stray `%`) must read as "no cookie", not throw a
+   URIError that turns the login page into a 500. */
 function readCookie(request, name) {
   const cookies = request.headers.get('Cookie') || '';
   for (const part of cookies.split(';')) {
     const i = part.indexOf('=');
-    if (i !== -1 && part.slice(0, i).trim() === name) return decodeURIComponent(part.slice(i + 1).trim());
+    if (i !== -1 && part.slice(0, i).trim() === name) {
+      try { return decodeURIComponent(part.slice(i + 1).trim()); } catch { return null; }
+    }
   }
   return null;
 }
 
 /* Only same-origin paths survive; `/\evil.com` and friends are normalised by
-   URL() to another origin and rejected. */
+   URL() to another origin and rejected. A same-origin URL can still carry a
+   path that *starts* with `//` (`/.//evil.com`, `/%2e//evil.com`,
+   `https://dash…//evil.com`), and a browser reads `Location: //evil.com` as
+   another host — so the path we hand back is re-checked on its own. */
 function safeNext(next, origin) {
   try {
     const u = new URL(String(next || '/'), origin);
     if (u.origin !== origin || u.pathname === '/login' || u.pathname === '/logout') return '/';
-    return u.pathname + u.search + u.hash;
+    const out = u.pathname + u.search + u.hash;
+    if (!out.startsWith('/') || /^\/[\/\\]/.test(out) || new URL(out, origin).origin !== origin) return '/';
+    return out;
   } catch { return '/'; }
 }
 

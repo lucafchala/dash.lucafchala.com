@@ -16,15 +16,32 @@ domain-restricted Drive files answer 401, so they say nothing about the link.
 
 Usage: check-links.py [data.json] [report.md]; exit 1 if anything is broken.
 """
-import json, socket, ssl, sys, time, urllib.error, urllib.request
+import json, socket, ssl, sys, time, urllib.error, urllib.parse, urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 UA = 'Mozilla/5.0 (compatible; lucafchala-dash-linkcheck/1.0; +https://github.com/lucafchala/dash.lucafchala.com)'
 TIMEOUT = 15
 
 
+def iri_to_uri(url):
+    # urllib only speaks ASCII: a destination with an accented path or host
+    # (which checkDest accepts) raised UnicodeEncodeError and killed the whole
+    # run before the report was written. Percent-encode the path/query and
+    # IDNA-encode the host, leaving existing %-escapes alone.
+    p = urllib.parse.urlsplit(url)
+    if not p.hostname or p.username:
+        return urllib.parse.quote(url, safe=":/?#[]@!$&'()*+,;=%~")
+    netloc = p.hostname.encode('idna').decode('ascii') + (f':{p.port}' if p.port else '')
+    safe = "/:@!$&'()*+,;=%~"
+    return urllib.parse.urlunsplit((p.scheme, netloc, urllib.parse.quote(p.path, safe),
+                                    urllib.parse.quote(p.query, safe + '?'), urllib.parse.quote(p.fragment, safe + '?')))
+
+
 def fetch(url):
-    req = urllib.request.Request(url, headers={'User-Agent': UA, 'Accept': 'text/html,*/*;q=0.8'})
+    try:
+        req = urllib.request.Request(iri_to_uri(url), headers={'User-Agent': UA, 'Accept': 'text/html,*/*;q=0.8'})
+    except (ValueError, UnicodeError) as e:
+        return None, url, type(e).__name__ + ': ' + str(e)[:120]
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
             r.read(2048)
