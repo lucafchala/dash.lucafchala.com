@@ -407,7 +407,7 @@
                     <label for="pm-content" data-i18n="lbl_content">Conteúdo</label>
                     <textarea id="pm-content" rows="12" spellcheck="false"></textarea>
                 </div>
-                <div class="preview" id="pm-preview" aria-live="polite" hidden></div>
+                <div class="preview" id="pm-preview" aria-live="polite" tabindex="0" hidden></div>
                 <p class="field-error" id="pm-error" role="alert" hidden></p>
             </div>
             <div class="modal-actions">
@@ -456,7 +456,7 @@
                 treino: ['Treino', 'Treinos (Hevy)'], rg: ['RG', 'Acesso restrito'],
             },
             dot: { up: 'online', down: 'fora do ar', degraded: 'instável', unknown: 'status desconhecido' },
-            repo_hub: 'migration hub',
+            repo_hub: 'central de migração',
             auth_notice_purl: 'Configure o GitHub para editar redirecionamentos.', auth_notice_paste: 'Configure o GitHub para gerenciar pastes.', configure: 'Configurar',
             load_error_purl: 'Não foi possível carregar os redirecionamentos do GitHub — o painel está somente leitura para evitar sobrescrever dados.',
             load_error_paste: 'Não foi possível carregar os pastes — edição desativada para evitar sobrescrever dados.',
@@ -601,7 +601,7 @@
        would shadow the file (Cloudflare applies _redirects before assets). */
     const RESERVED_PURL = new Set(['index.html', '404', '404.html', '404.js', 'url.js', 'robots.txt', 'sitemap.xml', '.well-known', 'data.json',
         'manifest.json', 'icon.svg', 'favicon.svg', 'favicon.ico', 'fonts', 'status', 'transferring', 'transferring.html', 'llms.txt', 'og.png', 'og.svg',
-        'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', '_redirects', '_headers', 'cdn-cgi', 'style.css', 'app.js', 'theme.js', 'todo.md']);
+        'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', '_redirects', '_headers', 'cdn-cgi', 'style.css', 'app.js', 'theme.js', 'todo.md', 'notice.css']);
     const RESERVED_PASTE = new Set(['index.html', 'pastes.json', 'sw.js', 'robots.txt', 'sitemap.xml', 'icon.svg', 'fonts', 'paste.js', 'paste.css', 'list.js',
         'theme.js', '_redirects', '_headers', 'cloudspot_deprecation', 'cdn-cgi', '.well-known', 'readme.md']);
 
@@ -1092,7 +1092,11 @@ function wirePrefs(T,after){applyI18n(T);
 document.querySelectorAll('[data-lang-btn]').forEach(function(b){b.addEventListener('click',function(){lang=b.getAttribute('data-lang-btn');d.dataset.lang=lang;setPref('lang',lang);applyI18n(T);if(after)after()})});
 var tb=document.getElementById('btn-theme');if(tb)tb.addEventListener('click',function(){theme=d.dataset.theme==='dark'?'light':'dark';d.dataset.theme=theme;setPref('theme',theme);applyI18n(T)})}`;
 
-    const GEN_CONTROLS = `<div class="controls"><div class="controls-inner" role="group" data-i18n-attr="aria-label:prefs" aria-label="Preferências"><button class="ctrl-btn" type="button" data-lang-btn="pt" aria-pressed="true">PT</button><span class="ctrl-sep" aria-hidden="true">|</span><button class="ctrl-btn" type="button" data-lang-btn="en" aria-pressed="false">EN</button><span class="ctrl-sep" aria-hidden="true">·</span><button class="ctrl-btn theme" type="button" id="btn-theme" data-i18n-attr="aria-label:theme" aria-label="Alternar tema">◐</button></div></div>`;
+    // Os controles ficam num <nav> rotulado: soltos num <div>, ficavam fora de
+    // qualquer landmark (axe `region`) no 404 e no índice do url. As shells de
+    // paste já montam o próprio <nav> em volta do grupo interno.
+    const GEN_CONTROLS_INNER = `<div class="controls-inner" role="group" data-i18n-attr="aria-label:prefs" aria-label="Preferências"><button class="ctrl-btn" type="button" data-lang-btn="pt" aria-pressed="true">PT</button><span class="ctrl-sep" aria-hidden="true">|</span><button class="ctrl-btn" type="button" data-lang-btn="en" aria-pressed="false">EN</button><span class="ctrl-sep" aria-hidden="true">·</span><button class="ctrl-btn theme" type="button" id="btn-theme" data-i18n-attr="aria-label:theme" aria-label="Alternar tema">◐</button></div>`;
+    const GEN_CONTROLS = `<nav class="controls" aria-label="lucafchala.com">${GEN_CONTROLS_INNER}</nav>`;
 
     function gen404Html() {
         return `<!DOCTYPE html>
@@ -1327,8 +1331,8 @@ ${GEN_CONTROLS}
 ${hubs}
   </div>
 </nav>
-<div class="rule" data-i18n="links">LINKS</div>
 <main id="main" class="list">
+<div class="rule" data-i18n="links">LINKS</div>
   <div class="tools">
     <label class="sr-only" for="q" data-i18n="filter_label">Filtrar links</label>
     <input type="search" id="q" data-i18n-attr="placeholder:filter_ph" placeholder="filtrar…" autocomplete="off" spellcheck="false">
@@ -1420,7 +1424,7 @@ document.addEventListener('DOMContentLoaded',function(){
 </head>
 <body data-slug="${esc(slug)}" data-type="${pgp ? 'pgp' : p.type === 'links' ? 'links' : 'text'}">
 <a class="skip" href="#paste-content" data-i18n="skip">Pular para o conteúdo</a>
-<nav class="controls" aria-label="paste.lucafchala.com"><a href="/" class="back" data-i18n="back">← pastes</a>${GEN_CONTROLS.replace('<div class="controls">', '').replace(/<\/div>$/, '')}</nav>
+<nav class="controls" aria-label="paste.lucafchala.com"><a href="/" class="back" data-i18n="back">← pastes</a>${GEN_CONTROLS_INNER}</nav>
 <header><h1 class="slug" id="paste-slug">${esc(slug)}</h1><p class="micro">paste.lucafchala.com</p>
 <div class="rule" id="paste-rule">${esc(p.subtitle || 'PASTE')}</div></header>
 <main class="content" id="paste-content" lang="${en ? 'en' : 'pt-BR'}">
