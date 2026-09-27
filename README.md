@@ -24,7 +24,7 @@ Três Pages Functions dão a ele um backend mínimo:
 
 ### Serviços, repositórios e links
 
-- **Serviços:** cards para cada subdomínio, com um ponto de status **ao vivo** lido de `status.lucafchala.com/api/status` (verde / amarelo / vermelho, com texto alternativo para leitores de tela).
+- **Serviços:** cards para cada subdomínio, com um ponto de status **ao vivo** lido de `status.lucafchala.com/api/resumo` — o retrato que a página de status já guardou, sem disparar varredura (verde / amarelo / vermelho, com texto alternativo para leitores de tela). Retrato atrasado ou indisponível → ponto neutro ("status desconhecido"), nunca verde.
 - **Repositórios:** atalhos para cada repositório do ecossistema no GitHub.
 - **Links úteis:** Cloudflare, GitHub, Status, tokens do GitHub.
 

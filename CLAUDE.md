@@ -113,7 +113,7 @@ CLAUDE.md             # this file
 `_headers` has `script-src 'self' 'sha256-…' 'sha256-…'`: one hash for the tiny theme bootstrap in `<head>`, one for the app script. **Any edit to either inline script changes its hash** — regenerate (snippet in README → "Segurança") or the app is blocked. CI's "CSP hashes cover every inline script" step fails on drift.
 
 - **Events:** there are no `onclick=` attributes. All events go through `data-action` + one delegated `click` listener, plus `submit`/`input`/`keydown` listeners.
-- **`connect-src`:** `'self'`, `https://api.github.com` (legacy PAT mode), `https://paste.lucafchala.com` (public pastes), `https://status.lucafchala.com` (hub status dots).
+- **`connect-src`:** `'self'`, `https://api.github.com` (legacy PAT mode), `https://paste.lucafchala.com` (public pastes), `https://status.lucafchala.com` (hub status dots — `/api/resumo` only, never `/api/status`, which can sweep).
 
 ---
 

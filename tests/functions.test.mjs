@@ -127,7 +127,11 @@ describe('middleware', () => {
     assert.match(res.headers.get('Set-Cookie'), /dash_session=\d+\.[0-9a-f]{64}; Path=\/; HttpOnly; Secure; SameSite=Strict/);
   });
 
-  for (const evil of ['/\\evil.com', '//evil.com', 'https://evil.com/', '/\t/evil.com', 'javascript:alert(1)']) {
+  // The second row keeps the origin but normalises to a path starting with
+  // `//`, which a browser follows to another host.
+  for (const evil of ['/\\evil.com', '//evil.com', 'https://evil.com/', '/\t/evil.com', 'javascript:alert(1)',
+    'https://dash.lucafchala.com//evil.com', '/.//evil.com', '/..//evil.com', '/a/..//evil.com', '/%2e//evil.com', '/%2E%2E//evil.com',
+    'https://dash.lucafchala.com/\\evil.com', '/./\\evil.com', '/.\t//evil.com', '/.\n//evil.com']) {
     test(`login next=${JSON.stringify(evil)} stays on origin`, async () => {
       const res = await login(evil);
       const loc = res.headers.get('Location');
@@ -135,6 +139,13 @@ describe('middleware', () => {
       assert.equal(new URL(loc, 'https://dash.lucafchala.com').origin, 'https://dash.lucafchala.com');
     });
   }
+
+  test('the login page never renders an off-origin next', async () => {
+    for (const evil of ['/.//evil.com', 'https://dash.lucafchala.com//evil.com', '/%2e//evil.com']) {
+      const html = await (await mw('/login?next=' + encodeURIComponent(evil))).text();
+      assert.match(html, /name="next" value="\/"/, evil);
+    }
+  });
 
   test('wrong password is rejected', async () => {
     const res = await login('/', 'nope');
@@ -148,6 +159,15 @@ describe('middleware', () => {
     const out = await mw('/logout', { cookie });
     assert.equal(out.status, 302);
     assert.match(out.headers.get('Set-Cookie'), /Max-Age=0/);
+  });
+
+  test('a malformed cookie reads as absent instead of throwing', async () => {
+    const res = await mw('/', { cookie: 'dash_session=%E0%A4%A' });
+    assert.equal(res.status, 302);
+    assert.match(res.headers.get('Location'), /^\/login\?next=/);
+    const page = await mw('/login', { cookie: 'lf_theme=%; dash_session=%' });
+    assert.equal(page.status, 200);
+    assert.match(await page.text(), /data-theme="dark"/);
   });
 
   test('missing DASH_PASSWORD fails closed', async () => {

@@ -407,7 +407,7 @@
                     <label for="pm-content" data-i18n="lbl_content">Conteúdo</label>
                     <textarea id="pm-content" rows="12" spellcheck="false"></textarea>
                 </div>
-                <div class="preview" id="pm-preview" aria-live="polite" hidden></div>
+                <div class="preview" id="pm-preview" aria-live="polite" tabindex="0" hidden></div>
                 <p class="field-error" id="pm-error" role="alert" hidden></p>
             </div>
             <div class="modal-actions">
@@ -456,7 +456,7 @@
                 treino: ['Treino', 'Treinos (Hevy)'], rg: ['RG', 'Acesso restrito'],
             },
             dot: { up: 'online', down: 'fora do ar', degraded: 'instável', unknown: 'status desconhecido' },
-            repo_hub: 'migration hub',
+            repo_hub: 'central de migração',
             auth_notice_purl: 'Configure o GitHub para editar redirecionamentos.', auth_notice_paste: 'Configure o GitHub para gerenciar pastes.', configure: 'Configurar',
             load_error_purl: 'Não foi possível carregar os redirecionamentos do GitHub — o painel está somente leitura para evitar sobrescrever dados.',
             load_error_paste: 'Não foi possível carregar os pastes — edição desativada para evitar sobrescrever dados.',
@@ -474,7 +474,7 @@
             results_title: 'Resultado do salvamento', res: { updated: 'atualizado', unchanged: 'sem mudança', kept: 'mantido (página personalizada)', failed: 'falhou', deleted: 'removido' },
             res_summary: (u, s, f) => `Salvo · ${u} arquivo(s) atualizado(s), ${s} sem mudança${f ? `, ${f} com falha` : ''}.`,
             retry_failed: 'tentar os que falharam', sync_confirm: 'Reescrever _redirects, 404 e o índice do url a partir dos dados salvos?',
-            regen_confirm: 'Regenerar a página de cada paste com o modelo atual?', nothing_to_sync: 'Salve ou descarte as alterações antes de sincronizar.',
+            regen_confirm: 'Regenerar a página de cada paste com o modelo atual?', busy: 'Aguarde: outra gravação ainda está em andamento.', nothing_to_sync: 'Salve ou descarte as alterações antes de sincronizar.',
             err: {
                 slug_required: 'Informe o slug.', slug_invalid: 'Use letras minúsculas, números, ".", "_" ou "-" (sem espaços, sem começar com símbolo).',
                 slug_reserved: s => `"/${s}" é reservado por um arquivo do site.`, slug_dup: s => `"/${s}" já existe.`,
@@ -532,7 +532,7 @@
             results_title: 'Save result', res: { updated: 'updated', unchanged: 'unchanged', kept: 'kept (custom page)', failed: 'failed', deleted: 'deleted' },
             res_summary: (u, s, f) => `Saved · ${u} file(s) updated, ${s} unchanged${f ? `, ${f} failed` : ''}.`,
             retry_failed: 'retry failed', sync_confirm: 'Rewrite _redirects, the 404 and the url index from the saved data?',
-            regen_confirm: 'Regenerate every paste page with the current template?', nothing_to_sync: 'Save or discard your changes before syncing.',
+            regen_confirm: 'Regenerate every paste page with the current template?', busy: 'Wait: another write is still running.', nothing_to_sync: 'Save or discard your changes before syncing.',
             err: {
                 slug_required: 'Enter a slug.', slug_invalid: 'Use lowercase letters, digits, ".", "_" or "-" (no spaces, must not start with a symbol).',
                 slug_reserved: s => `"/${s}" is reserved by a file on the site.`, slug_dup: s => `"/${s}" already exists.`,
@@ -590,6 +590,8 @@
     ].map(name => ({ name, repo: `lucafchala/${name}` })).concat([{ name: 'OMG.LOL_transfer', repo: 'lucafchala/OMG.LOL_transfer', note: true }]);
 
     let statusMap = {};
+    /* Only these reach the dot's class attribute; anything else is "unknown". */
+    const LIVE_STATES = new Set(['up', 'degraded', 'down']);
     const normalizeUrl = u => String(u).replace(/\/+$/, '').toLowerCase();
 
     /* ── Validation ── */
@@ -599,7 +601,7 @@
        would shadow the file (Cloudflare applies _redirects before assets). */
     const RESERVED_PURL = new Set(['index.html', '404', '404.html', '404.js', 'url.js', 'robots.txt', 'sitemap.xml', '.well-known', 'data.json',
         'manifest.json', 'icon.svg', 'favicon.svg', 'favicon.ico', 'fonts', 'status', 'transferring', 'transferring.html', 'llms.txt', 'og.png', 'og.svg',
-        'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', '_redirects', '_headers', 'cdn-cgi', 'style.css', 'app.js', 'theme.js', 'todo.md']);
+        'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', '_redirects', '_headers', 'cdn-cgi', 'style.css', 'app.js', 'theme.js', 'todo.md', 'notice.css']);
     const RESERVED_PASTE = new Set(['index.html', 'pastes.json', 'sw.js', 'robots.txt', 'sitemap.xml', 'icon.svg', 'fonts', 'paste.js', 'paste.css', 'list.js',
         'theme.js', '_redirects', '_headers', 'cloudspot_deprecation', 'cdn-cgi', '.well-known', 'readme.md']);
 
@@ -1090,7 +1092,11 @@ function wirePrefs(T,after){applyI18n(T);
 document.querySelectorAll('[data-lang-btn]').forEach(function(b){b.addEventListener('click',function(){lang=b.getAttribute('data-lang-btn');d.dataset.lang=lang;setPref('lang',lang);applyI18n(T);if(after)after()})});
 var tb=document.getElementById('btn-theme');if(tb)tb.addEventListener('click',function(){theme=d.dataset.theme==='dark'?'light':'dark';d.dataset.theme=theme;setPref('theme',theme);applyI18n(T)})}`;
 
-    const GEN_CONTROLS = `<div class="controls"><div class="controls-inner" role="group" data-i18n-attr="aria-label:prefs" aria-label="Preferências"><button class="ctrl-btn" type="button" data-lang-btn="pt" aria-pressed="true">PT</button><span class="ctrl-sep" aria-hidden="true">|</span><button class="ctrl-btn" type="button" data-lang-btn="en" aria-pressed="false">EN</button><span class="ctrl-sep" aria-hidden="true">·</span><button class="ctrl-btn theme" type="button" id="btn-theme" data-i18n-attr="aria-label:theme" aria-label="Alternar tema">◐</button></div></div>`;
+    // Os controles ficam num <nav> rotulado: soltos num <div>, ficavam fora de
+    // qualquer landmark (axe `region`) no 404 e no índice do url. As shells de
+    // paste já montam o próprio <nav> em volta do grupo interno.
+    const GEN_CONTROLS_INNER = `<div class="controls-inner" role="group" data-i18n-attr="aria-label:prefs" aria-label="Preferências"><button class="ctrl-btn" type="button" data-lang-btn="pt" aria-pressed="true">PT</button><span class="ctrl-sep" aria-hidden="true">|</span><button class="ctrl-btn" type="button" data-lang-btn="en" aria-pressed="false">EN</button><span class="ctrl-sep" aria-hidden="true">·</span><button class="ctrl-btn theme" type="button" id="btn-theme" data-i18n-attr="aria-label:theme" aria-label="Alternar tema">◐</button></div>`;
+    const GEN_CONTROLS = `<nav class="controls" aria-label="lucafchala.com">${GEN_CONTROLS_INNER}</nav>`;
 
     function gen404Html() {
         return `<!DOCTYPE html>
@@ -1325,8 +1331,8 @@ ${GEN_CONTROLS}
 ${hubs}
   </div>
 </nav>
-<div class="rule" data-i18n="links">LINKS</div>
 <main id="main" class="list">
+<div class="rule" data-i18n="links">LINKS</div>
   <div class="tools">
     <label class="sr-only" for="q" data-i18n="filter_label">Filtrar links</label>
     <input type="search" id="q" data-i18n-attr="placeholder:filter_ph" placeholder="filtrar…" autocomplete="off" spellcheck="false">
@@ -1418,7 +1424,7 @@ document.addEventListener('DOMContentLoaded',function(){
 </head>
 <body data-slug="${esc(slug)}" data-type="${pgp ? 'pgp' : p.type === 'links' ? 'links' : 'text'}">
 <a class="skip" href="#paste-content" data-i18n="skip">Pular para o conteúdo</a>
-<nav class="controls" aria-label="paste.lucafchala.com"><a href="/" class="back" data-i18n="back">← pastes</a>${GEN_CONTROLS.replace('<div class="controls">', '').replace(/<\/div>$/, '')}</nav>
+<nav class="controls" aria-label="paste.lucafchala.com"><a href="/" class="back" data-i18n="back">← pastes</a>${GEN_CONTROLS_INNER}</nav>
 <header><h1 class="slug" id="paste-slug">${esc(slug)}</h1><p class="micro">paste.lucafchala.com</p>
 <div class="rule" id="paste-rule">${esc(p.subtitle || 'PASTE')}</div></header>
 <main class="content" id="paste-content" lang="${en ? 'en' : 'pt-BR'}">
@@ -1448,8 +1454,13 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
         return writes;
     }
 
+    /* One writer per kind at a time: a save's derived writes, "sincronizar" /
+       "regenerar páginas" and a retry all commit to the same repos, and two of
+       them interleaving is the concurrent-commit 409 that runWrites() exists
+       to avoid. `saving` is the lock; these buttons mirror it. */
+    const BUSY_ACTIONS = { purls: ['save-purls', 'discard-purls', 'sync-purls'], pastes: ['save-pastes', 'discard-pastes', 'regen-pastes'] };
     function setBusy(which, busy) {
-        document.querySelectorAll(`[data-action="save-${which}"], [data-action="discard-${which}"]`).forEach(b => {
+        document.querySelectorAll(BUSY_ACTIONS[which].map(a => `[data-action="${a}"]`).join(', ')).forEach(b => {
             b.disabled = busy;
             if (b.dataset.action.startsWith('save')) b.textContent = busy ? s().saving : s().save;
         });
@@ -1475,7 +1486,7 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
             if (!conflict) {
                 purl.saved = snap;
                 await runWrites(derivedPurlWrites(snap, c), results);
-                report(results, () => runWrites(results.filter(r => r.state === 'failed' && r.write).map(r => r.write), []));
+                report(results, 'purls');
             }
         } catch (e) {
             report(results);
@@ -1488,8 +1499,9 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
     }
 
     async function syncPurls() {
+        if (purl.saving) return;
         if (purlDirty()) { toast(s().nothing_to_sync, { error: true }); return; }
-        if (!await confirmDialog(s().sync_confirm)) return;
+        if (!await confirmDialog(s().sync_confirm) || purl.saving) return;
         const results = [];
         purl.saving = true; setBusy('purls', true);
         try { await runWrites(derivedPurlWrites(purl.saved, cfg()), results); report(results); }
@@ -1523,7 +1535,9 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
         }
     }
 
-    function report(results, retry) {
+    /* `kind` ('purls' | 'pastes') offers a retry of the failed writes, run
+       under the same lock as a save. */
+    function report(results, kind) {
         if (!results.length) return;
         const count = st => results.filter(r => r.state === st).length;
         const failed = count('failed');
@@ -1531,9 +1545,16 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
         if (!failed) { toast(summary); return; }
         const rows = results.map(r => `<li><span class="res-${r.state}">${esc(s().res[r.state] || r.state)}</span><span>${esc(r.repo.split('/')[1])}/${esc(r.path)}${r.error ? ` — ${esc(r.error)}` : ''}</span></li>`).join('');
         const actions = [{ label: s().close, value: null }];
-        if (retry) actions.push({ label: s().retry_failed, value: 'retry', kind: 'ok' });
+        if (kind) actions.push({ label: s().retry_failed, value: 'retry', kind: 'ok' });
         openDialog({ title: s().results_title, body: `<p>${esc(summary)}</p><ul class="res-list">${rows}</ul>`, actions }).then(async v => {
-            if (v === 'retry') { const again = []; await runWrites(results.filter(r => r.state === 'failed' && r.write).map(r => r.write), again); report(again, retry); }
+            if (v !== 'retry') return;
+            const st = kind === 'purls' ? purl : paste;
+            if (st.saving) { toast(s().busy, { error: true }); return; }
+            const again = [];
+            st.saving = true; setBusy(kind, true);
+            try { await runWrites(results.filter(r => r.state === 'failed' && r.write).map(r => r.write), again); }
+            finally { st.saving = false; setBusy(kind, false); }
+            report(again, kind);
         });
     }
 
@@ -1693,7 +1714,7 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
                 const writes = pasteWrites(paste.saved, snap, c.repoPaste);
                 paste.saved = snap;
                 await runWrites(writes, results);
-                report(results, true);
+                report(results, 'pastes');
             }
         } catch (e) {
             report(results);
@@ -1706,11 +1727,13 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
     }
 
     async function regenPastes() {
-        if (!await confirmDialog(s().regen_confirm)) return;
+        if (paste.saving) return;
+        if (!await confirmDialog(s().regen_confirm) || paste.saving) return;
         const results = [];
         paste.saving = true; setBusy('pastes', true);
-        try { await runWrites(pasteWrites(paste.saved, paste.saved, cfg().repoPaste, true), results); report(results, true); }
+        try { await runWrites(pasteWrites(paste.saved, paste.saved, cfg().repoPaste, true), results); }
         finally { paste.saving = false; setBusy('pastes', false); }
+        report(results, 'pastes');
     }
 
     /* ── Import / export ── */
@@ -1988,8 +2011,9 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
     function renderHubs() {
         el('hubs-grid').innerHTML = HUBS.map(h => {
             const [name, desc] = s().hubs[h.key];
-            const st = statusMap[normalizeUrl(h.url)] || 'unknown';
-            const dot = `<span class="dot ${st}" role="img" aria-label="${esc(s().dot[st] || st)}" title="${esc(s().dot[st] || st)}"></span>`;
+            const v = statusMap[normalizeUrl(h.url)];
+            const st = LIVE_STATES.has(v) ? v : 'unknown';
+            const dot = `<span class="dot ${esc(st)}" role="img" aria-label="${esc(s().dot[st] || st)}" title="${esc(s().dot[st] || st)}"></span>`;
             const host = h.url.replace('https://', '');
             if (h.primary) {
                 return `<a href="${h.url}" class="hub hub-primary" target="_blank" rel="noopener noreferrer"><div class="hub-primary-body"><span class="hub-name">${esc(name)}</span><span class="hub-desc">${esc(desc)}</span><span class="hub-url">${esc(host)}</span></div>${dot}<span class="hub-arrow" aria-hidden="true">↗</span></a>`;
@@ -2118,12 +2142,18 @@ ${meta}<pre class="paste-pre" id="paste-body">${esc(p.content || '')}</pre>
         updateGhBtn();
         await Promise.all([loadPurls(), loadPastes()]);
     }
+    /* /api/resumo, never /api/status: resumo only reads status's D1 snapshot
+       (small, CORS-open, cached), while /api/status sweeps every subdomain and
+       runs the alert pass whenever the snapshot is stale. A stale or unshared
+       snapshot says nothing about now, so the dots stay "unknown" rather than
+       green. */
     function loadStatus() {
-        fetch('https://status.lucafchala.com/api/status', { cache: 'no-store' })
+        fetch('https://status.lucafchala.com/api/resumo', { credentials: 'omit' })
             .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
             .then(data => {
+                if (!data || data.retratoCompartilhado !== true || data.atrasado === true || !Array.isArray(data.services)) return;
                 statusMap = {};
-                (data.services || []).forEach(m => { if (m.url && m.status) statusMap[normalizeUrl(m.url)] = m.status; });
+                data.services.forEach(m => { if (m && typeof m.url === 'string' && LIVE_STATES.has(m.status)) statusMap[normalizeUrl(m.url)] = m.status; });
                 renderHubs();
             })
             .catch(() => { /* dots stay neutral */ });

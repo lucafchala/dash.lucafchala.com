@@ -81,7 +81,7 @@ jobs:
           python3 - <<'PY'
           import json, re, sys
           from urllib.parse import urlparse
-          RESERVED = {'index.html', '404', '404.html', '404.js', 'url.js', 'robots.txt', 'sitemap.xml', '.well-known', 'data.json', 'manifest.json', 'icon.svg', 'favicon.svg', 'favicon.ico', 'fonts', 'status', 'transferring', 'transferring.html', 'llms.txt', 'og.png', 'og.svg', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', '_redirects', '_headers', 'cdn-cgi', 'style.css', 'app.js', 'theme.js', 'todo.md'}
+          RESERVED = {'index.html', '404', '404.html', '404.js', 'url.js', 'robots.txt', 'sitemap.xml', '.well-known', 'data.json', 'manifest.json', 'icon.svg', 'favicon.svg', 'favicon.ico', 'fonts', 'status', 'transferring', 'transferring.html', 'llms.txt', 'og.png', 'og.svg', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', '_redirects', '_headers', 'cdn-cgi', 'style.css', 'app.js', 'theme.js', 'todo.md', 'notice.css'}
           items = json.load(open('data.json', encoding='utf-8'))['redirects']
           errs, seen = [], set()
           for i, r in enumerate(items):
