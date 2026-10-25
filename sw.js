@@ -1,7 +1,7 @@
-const CACHE = 'dash-v5';
+const CACHE = 'dash-v6';
 const PRECACHE = [
     '/manifest.json', '/icon.svg',
-    '/fonts/cormorant-garamond-latin.woff2', '/fonts/cormorant-garamond-italic-latin.woff2', '/fonts/jetbrains-mono-latin.woff2',
+    '/fonts/inter-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin.woff2',
 ];
 
 /* '/' is deliberately not precached: while logged out the middleware 302s it

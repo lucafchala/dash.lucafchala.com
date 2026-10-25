@@ -251,7 +251,7 @@ dash.lucafchala.com/
 
 O sistema visual canônico está no [README do hub](https://github.com/lucafchala/lucafchala.com#design-system). Resumo do que o painel usa:
 
-- **Fontes:** Cormorant Garamond (títulos, nomes de serviços) + JetBrains Mono (todo o resto), auto-hospedadas em `/fonts` com `font-src 'self'`.
+- **Fontes:** Inter (a mesma do fotos.lucafchala.com) para a interface + JetBrains Mono para código e texto de paste.
 - **Tokens:** `--bg #0d0c0a / #f4efe6`, `--ctrl-bg`, `--border`, `--border-strong`, `--text`, `--muted #948a7c / #6b6152` (contraste AA), `--accent #c08030 / #8a5712`, `--accent-dim` (só bordas), `--up` / `--down` / `--degraded` para os pontos de status.
 - **Layout:** `max-width: 720px`, `padding: 48px 32px 72px` (celular `28px 18px 52px`), cantos de 2–4 px, sem sombras (exceto nos avisos), textura de grão via `body::after`.
 - **Animação:** `rise` escalonada, desligada com `prefers-reduced-motion`.
