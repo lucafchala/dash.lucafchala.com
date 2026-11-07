@@ -271,3 +271,11 @@ O sistema visual canônico está no [README do hub](https://github.com/lucafchal
 - [ ] Barra `PT | EN · ◐` com `aria-pressed` e `aria-label`
 - [ ] `:focus-visible`, `prefers-reduced-motion`, alvos de toque ≥ 24 px, link "pular para o conteúdo"
 - [ ] Sem rolagem lateral em 360 px
+
+## Aviso de lançamento de álbum (fotos) nas páginas geradas
+
+Os geradores das páginas do **paste** e do **url** (as páginas de cada paste, o índice do url e o `404.html` dele) incluem `<script async data-cfasync="false" src="https://fotos.lucafchala.com/destaque.js">` antes do `</body>`. O script só desenha algo quando o fotos lança um álbum com **"Destaque máximo no site"** marcado: a faixa azul "TURMA 2026 · COLÉGIO SANTA CRUZ **Entre Nós** · o álbum está no ar · Ver o álbum →". Até lá, nada aparece.
+
+- **A CSP de cada página gerada** fica no `_headers` do próprio site (paste e url), que libera `https://fotos.lucafchala.com` em `script-src` e `connect-src`. O `_headers` **deste** repositório só mudou porque o hash do script embutido do painel mudou junto.
+- **O painel em si (esta página) não carrega o aviso, de propósito.** Ele guarda o token do GitHub, e nenhum script de outra origem roda aqui. Quem usa o painel é só o dono.
+- **Para tirar o aviso:** apague a linha nos três geradores e regenere as páginas. O quadro de todos os sites está no `docs/ALBUM.md` do fotos, "Aviso nos outros sites".
