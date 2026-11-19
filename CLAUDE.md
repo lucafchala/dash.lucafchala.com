@@ -157,6 +157,7 @@ isAuth()                           // serverGh || !!pat
 
 - **Add a PURL group:** extend `GROUPS`, `STRINGS.*.groups`, `URL_T.*.g_<group>`, and the CI list in `checks.yml` ("data.json is valid").
 - **Add a reserved path:** when a target site gains a top-level file, add it to `RESERVED_PURL` (and the CI list).
+- **Add a page to url.lucafchala.com's "PÁGINAS" grid:** add it to `URL_HUBS` plus a `hub_<key>` string in both `URL_T` languages, regenerate the CSP hash (README → Segurança), then sync. Only public pages; `rg` and `treino` stay out.
 - **Change the 404 / url index / paste shell:** edit the generator, reload the dash, press sync / regenerate (or regenerate the files and commit them in the target repos).
 - **Change what gets written on save:** `derivedPurlWrites()` / `pasteWrites()`. Keep the sequential-within-repo rule and the script-before-HTML order.
 

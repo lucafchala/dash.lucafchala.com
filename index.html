@@ -1223,9 +1223,11 @@ document.addEventListener('DOMContentLoaded',function(){
 
     const URL_HUBS = [
         ['https://lucafchala.com/', 'lucafchala.com', 'hub_home'], ['https://fotos.lucafchala.com/', 'fotos', 'hub_fotos'],
-        ['https://radio.lucafchala.com/', 'rádio', 'hub_radio'], ['https://paste.lucafchala.com/', 'paste', 'hub_paste'],
-        ['https://keys.lucafchala.com/', 'keys', 'hub_keys'], ['https://proof.lucafchala.com/', 'proof', 'hub_proof'],
-        ['https://status.lucafchala.com/', 'status', 'hub_status'], ['https://dash.lucafchala.com/', 'dash', 'hub_dash'],
+        ['https://radio.lucafchala.com/', 'rádio', 'hub_radio'], ['https://radio.lucafchala.com/pu2xik/', 'pu2xik', 'hub_pu2xik'],
+        ['https://paste.lucafchala.com/', 'paste', 'hub_paste'], ['https://keys.lucafchala.com/', 'keys', 'hub_keys'],
+        ['https://proof.lucafchala.com/', 'proof', 'hub_proof'], ['https://pays.lucafchala.com/', 'pays', 'hub_pays'],
+        ['https://status.lucafchala.com/', 'status', 'hub_status'], ['https://restricted.lucafchala.com/', 'restricted', 'hub_restricted'],
+        ['https://dash.lucafchala.com/', 'dash', 'hub_dash'],
     ];
     const URL_T = {
         pt: { skip: 'Pular para o conteúdo', prefs: 'Preferências', theme: 'Alternar tema', tagline: 'links curtos e permanentes', pages: 'PÁGINAS', links: 'LINKS',
@@ -1233,12 +1235,14 @@ document.addEventListener('DOMContentLoaded',function(){
             g_contact: 'contato', g_events: 'eventos', g_video: 'vídeo', g_tools: 'ferramentas',
             hub_home: 'página principal', hub_fotos: 'fotografia', hub_radio: 'radioamadorismo', hub_paste: 'textos e snippets', hub_keys: 'chaves SSH / PGP',
             hub_proof: 'prova de identidade', hub_status: 'status dos serviços', hub_dash: 'painel de controle',
+            hub_pu2xik: 'meu perfil de rádio', hub_pays: 'controle de assinaturas', hub_restricted: 'um quebra-cabeça de criptografia',
             foot: 'Cada link funciona em lucafchala.com/<slug> e url.lucafchala.com/<slug>.', count_all: 'links', count_of: 'de' },
         en: { skip: 'Skip to content', prefs: 'Preferences', theme: 'Toggle theme', tagline: 'short, permanent links', pages: 'PAGES', links: 'LINKS',
             filter_label: 'Filter links', filter_ph: 'filter…', none: 'No links found.', copy: 'copy', copied: 'copied!', copy_failed: 'copy failed', open: 'open',
             g_contact: 'contact', g_events: 'events', g_video: 'video', g_tools: 'tools',
             hub_home: 'homepage', hub_fotos: 'photography', hub_radio: 'amateur radio', hub_paste: 'texts and snippets', hub_keys: 'SSH / PGP keys',
             hub_proof: 'identity proof', hub_status: 'service status', hub_dash: 'control panel',
+            hub_pu2xik: 'my radio profile', hub_pays: 'subscription tracker', hub_restricted: 'a cryptography puzzle',
             foot: 'Every link works at lucafchala.com/<slug> and url.lucafchala.com/<slug>.', count_all: 'links', count_of: 'of' },
     };
 
